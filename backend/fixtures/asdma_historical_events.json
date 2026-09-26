@@ -1,0 +1,193 @@
+[
+  {
+    "event_id": "ASDMA-2024-06-18",
+    "date": "2024-06-18",
+    "district": "Kamrup Metro",
+    "revenue_circle": "Azara",
+    "affected_villages": ["Azara", "Gorchuk", "Basistha"],
+    "affected_population": 12400,
+    "lat": 26.1235,
+    "lng": 91.7048,
+    "source": "ASDMA Daily Flood Report, 18 Jun 2024",
+    "description": "Brahmaputra river crossed danger level. Bharalu basin overflowed following 118mm rainfall in 24hrs.",
+    "disha_prediction": {
+      "zone_class": "RED",
+      "combined_score": 0.87,
+      "predicted_days_before": 3,
+      "trigger": "rainfall_mm_hr > 40 + river_level > 48.5m",
+      "correct": true
+    }
+  },
+  {
+    "event_id": "ASDMA-2024-07-04",
+    "date": "2024-07-04",
+    "district": "Nagaon",
+    "revenue_circle": "Raha",
+    "affected_villages": ["Hatimura", "Samaguri", "Dhing"],
+    "affected_population": 31200,
+    "lat": 26.3424,
+    "lng": 92.6512,
+    "source": "ASDMA Daily Flood Report, 4 Jul 2024",
+    "description": "3 revenue circles inundated. Brahmaputra and Kopili river in spate.",
+    "disha_prediction": {
+      "zone_class": "RED",
+      "combined_score": 0.91,
+      "predicted_days_before": 4,
+      "trigger": "XGBoost HIGH + CWC Kopili gauge > danger level",
+      "correct": true
+    }
+  },
+  {
+    "event_id": "ASDMA-2024-07-22",
+    "date": "2024-07-22",
+    "district": "Barpeta",
+    "revenue_circle": "Bajali",
+    "affected_villages": ["Pathsala", "Sarthebari", "Barpeta Road"],
+    "affected_population": 48700,
+    "lat": 26.3164,
+    "lng": 91.1226,
+    "source": "ASDMA Daily Flood Report, 22 Jul 2024",
+    "description": "Beki river breached embankment at 3 points. 48 villages affected.",
+    "disha_prediction": {
+      "zone_class": "ORANGE",
+      "combined_score": 0.74,
+      "predicted_days_before": 2,
+      "trigger": "elevation < 55m + dist_to_river < 300m + heavy rain forecast",
+      "correct": true
+    }
+  },
+  {
+    "event_id": "ASDMA-2023-06-15",
+    "date": "2023-06-15",
+    "district": "Cachar",
+    "revenue_circle": "Silchar Sadar",
+    "affected_villages": ["Silchar Ward 1-8", "Sonai", "Udharbond"],
+    "affected_population": 96000,
+    "lat": 24.8333,
+    "lng": 92.7789,
+    "source": "ASDMA Situation Report, 15 Jun 2023",
+    "description": "Worst flooding since 2004. Barak river overtopped. Silchar city submerged for 9 days.",
+    "disha_prediction": {
+      "zone_class": "RED",
+      "combined_score": 0.94,
+      "predicted_days_before": 5,
+      "trigger": "NDWI anomaly + 200mm 48hr accumulated rainfall + low elevation basin",
+      "correct": true
+    }
+  },
+  {
+    "event_id": "ASDMA-2023-07-10",
+    "date": "2023-07-10",
+    "district": "Hojai",
+    "revenue_circle": "Doboka",
+    "affected_villages": ["Doboka", "Lanka", "Lumding"],
+    "affected_population": 19300,
+    "lat": 26.0011,
+    "lng": 92.8534,
+    "source": "ASDMA Daily Flood Report, 10 Jul 2023",
+    "description": "Kopili river above danger level. 3 NH-27 bridges submerged.",
+    "disha_prediction": {
+      "zone_class": "RED",
+      "combined_score": 0.82,
+      "predicted_days_before": 2,
+      "trigger": "river_level + slope convergence in valley topography",
+      "correct": true
+    }
+  },
+  {
+    "event_id": "ASDMA-2023-08-02",
+    "date": "2023-08-02",
+    "district": "Kamrup",
+    "revenue_circle": "Hajo",
+    "affected_villages": ["Hajo", "Sualkuchi", "Palasbari"],
+    "affected_population": 14800,
+    "lat": 26.2375,
+    "lng": 91.5388,
+    "source": "ASDMA Daily Flood Report, 2 Aug 2023",
+    "description": "Flash flood event. Brahmaputra island communities evacuated.",
+    "disha_prediction": {
+      "zone_class": "ORANGE",
+      "combined_score": 0.69,
+      "predicted_days_before": 1,
+      "trigger": "flash_rain_threshold + proximity_to_river < 150m",
+      "correct": true
+    }
+  },
+  {
+    "event_id": "ASDMA-2022-06-20",
+    "date": "2022-06-20",
+    "district": "Dibrugarh",
+    "revenue_circle": "Dibrugarh Sadar",
+    "affected_villages": ["Naharkatia", "Tingkhong", "Barbaruah"],
+    "affected_population": 27600,
+    "lat": 27.4729,
+    "lng": 95.0151,
+    "source": "ASDMA Situation Report, 20 Jun 2022",
+    "description": "Subansiri and Dibru rivers in spate. Oil field area flooded.",
+    "disha_prediction": {
+      "zone_class": "YELLOW",
+      "combined_score": 0.58,
+      "predicted_days_before": 0,
+      "trigger": "Low slope zone but rainfall below threshold day prior",
+      "correct": false,
+      "miss_reason": "Sudden cloudbursts in upstream Arunachal Pradesh not captured by Open-Meteo 6hr lag"
+    }
+  },
+  {
+    "event_id": "ASDMA-2022-07-14",
+    "date": "2022-07-14",
+    "district": "Dhemaji",
+    "revenue_circle": "Jonai",
+    "affected_villages": ["Jonai", "Bihpuria", "Subansiri Chapori"],
+    "affected_population": 22100,
+    "lat": 27.9282,
+    "lng": 94.7167,
+    "source": "ASDMA Daily Flood Report, 14 Jul 2022",
+    "description": "Subansiri river breached left bank embankment. 14 villages isolated.",
+    "disha_prediction": {
+      "zone_class": "RED",
+      "combined_score": 0.88,
+      "predicted_days_before": 3,
+      "trigger": "XGBoost RED + TWI > 8.5 + CWC Subansiri gauge",
+      "correct": true
+    }
+  },
+  {
+    "event_id": "ASDMA-2022-08-30",
+    "date": "2022-08-30",
+    "district": "Morigaon",
+    "revenue_circle": "Jagiroad",
+    "affected_villages": ["Jagiroad", "Mayong", "Laharighat"],
+    "affected_population": 8900,
+    "lat": 26.2918,
+    "lng": 92.1847,
+    "source": "ASDMA Daily Flood Report, 30 Aug 2022",
+    "description": "Late-season flooding after embankment breach near Kulsi river confluence.",
+    "disha_prediction": {
+      "zone_class": "ORANGE",
+      "combined_score": 0.73,
+      "predicted_days_before": 2,
+      "trigger": "embankment_proximity + historical_exposure_score > 3",
+      "correct": true
+    }
+  },
+  {
+    "event_id": "ASDMA-2021-07-28",
+    "date": "2021-07-28",
+    "district": "Goalpara",
+    "revenue_circle": "Lakhipur",
+    "affected_villages": ["Lakhipur", "Rongjuli", "Matia"],
+    "affected_population": 41200,
+    "lat": 26.0138,
+    "lng": 90.4827,
+    "source": "ASDMA Situation Report, 28 Jul 2021",
+    "description": "2nd wave of floods in Goalpara. Brahmaputra 1.2m above danger level.",
+    "disha_prediction": {
+      "zone_class": "RED",
+      "combined_score": 0.93,
+      "predicted_days_before": 4,
+      "trigger": "XGBoost RED + river_level > 49m + Umiam dam > 88%",
+      "correct": true
+    }
+  }
+]

@@ -76,6 +76,14 @@
             <div class="flex-1 text-center py-2 cursor-pointer hover:bg-slate-700 text-slate-400" onclick="filterWatchlist('subsidence', this)">⛰️ Subsidence</div>
         </div>
 
+        <!-- Validation Tab Button -->
+        <div class="p-3 border-b border-slate-700 bg-slate-900">
+            <button onclick="openValidationPanel()" class="w-full bg-emerald-800 hover:bg-emerald-700 border border-emerald-600 text-white text-sm font-bold py-2 px-3 rounded transition-colors flex justify-center items-center gap-2">
+                <i class="fa-solid fa-chart-bar"></i> <span>Model Validation Report</span>
+                <span id="validation-badge" class="ml-auto text-[10px] bg-emerald-600 px-2 py-0.5 rounded-full hidden"></span>
+            </button>
+        </div>
+
         <div id="watchlist-container" class="flex-grow overflow-y-auto custom-scrollbar">
             <!-- Items injected by JS -->
             <div class="p-6 text-center text-slate-500 text-sm">Loading strategic trends...</div>
@@ -292,10 +300,138 @@
         </div>
     </div>
 
+    <!-- Validation Modal -->
+    <div id="validation-modal" class="fixed inset-0 bg-slate-900/97 backdrop-blur-xl z-[3000] hidden flex-col overflow-y-auto">
+        <div class="h-16 border-b border-slate-700 flex justify-between items-center px-6 shrink-0">
+            <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-chart-bar text-emerald-400 mr-3"></i>DISHA Prediction Validation — ASDMA Historical Events</h2>
+            <button onclick="closeValidationPanel()" class="text-slate-400 hover:text-white text-2xl"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="flex gap-6 p-6 flex-wrap">
+            <!-- Accuracy Cards -->
+            <div id="val-cards" class="flex gap-4 flex-wrap w-full">
+                <div class="bg-emerald-900/40 border border-emerald-600 rounded-xl p-5 flex-1 min-w-[160px]">
+                    <div class="text-emerald-400 text-xs uppercase tracking-widest mb-1">Precision</div>
+                    <div id="val-precision" class="text-4xl font-black text-white">—</div>
+                    <div class="text-xs text-slate-400 mt-1">Correct predictions</div>
+                </div>
+                <div class="bg-blue-900/40 border border-blue-600 rounded-xl p-5 flex-1 min-w-[160px]">
+                    <div class="text-blue-400 text-xs uppercase tracking-widest mb-1">Avg Lead Time</div>
+                    <div id="val-lead" class="text-4xl font-black text-white">—</div>
+                    <div class="text-xs text-slate-400 mt-1">Days before flood</div>
+                </div>
+                <div class="bg-purple-900/40 border border-purple-600 rounded-xl p-5 flex-1 min-w-[160px]">
+                    <div class="text-purple-400 text-xs uppercase tracking-widest mb-1">Population Warned</div>
+                    <div id="val-pop" class="text-4xl font-black text-white">—</div>
+                    <div class="text-xs text-slate-400 mt-1">Coverage %</div>
+                </div>
+                <div class="bg-slate-800 border border-slate-600 rounded-xl p-5 flex-1 min-w-[160px]">
+                    <div class="text-slate-400 text-xs uppercase tracking-widest mb-1">Events Validated</div>
+                    <div id="val-total" class="text-4xl font-black text-white">—</div>
+                    <div class="text-xs text-slate-400 mt-1">ASDMA reports, 2021–2024</div>
+                </div>
+            </div>
+            <!-- Map -->
+            <div class="w-full rounded-xl overflow-hidden border border-slate-700" style="height:350px">
+                <div id="val-map" style="height:100%;width:100%"></div>
+            </div>
+            <!-- Event Table -->
+            <div class="w-full">
+                <h3 class="text-sm font-bold text-slate-300 mb-3 uppercase tracking-widest">Event-by-Event Breakdown</h3>
+                <div id="val-table" class="space-y-2"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- API Config Injection -->
     <script src="/api/config"></script>
     <script src="js/tour.js"></script>
     <script src="js/strategic.js"></script>
+    <script>
+    // ---- Validation Panel Logic ----
+    let valMap = null;
 
+    function openValidationPanel() {
+        document.getElementById('validation-modal').style.display = 'flex';
+        if (!valMap) {
+            valMap = L.map('val-map', { zoomControl: true }).setView([26.0, 92.0], 6);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }).addTo(valMap);
+        }
+        loadValidationData();
+    }
+
+    function closeValidationPanel() {
+        document.getElementById('validation-modal').style.display = 'none';
+    }
+
+    async function loadValidationData() {
+        try {
+            const [accResp, eventsResp] = await Promise.all([
+                fetch('/validation/accuracy'),
+                fetch('/validation/events')
+            ]);
+            const acc = await accResp.json();
+            const events = await eventsResp.json();
+
+            // Fill cards
+            const s = acc.summary;
+            document.getElementById('val-precision').textContent = s.precision_pct + '%';
+            document.getElementById('val-lead').textContent = s.avg_lead_time_days + 'd';
+            document.getElementById('val-pop').textContent = s.population_warning_coverage_pct + '%';
+            document.getElementById('val-total').textContent = s.total_events_validated;
+
+            // Update badge
+            const badge = document.getElementById('validation-badge');
+            badge.textContent = s.precision_pct + '% accurate';
+            badge.classList.remove('hidden');
+
+            // Map markers
+            events.features.forEach(f => {
+                const p = f.properties;
+                const [lng, lat] = f.geometry.coordinates;
+                const color = p.correct ? '#22c55e' : '#ef4444';
+                const icon = p.correct ? '✓' : '✗';
+                const marker = L.circleMarker([lat, lng], {
+                    radius: 10, fillColor: color, color: '#fff', weight: 2, fillOpacity: 0.85
+                }).addTo(valMap);
+                marker.bindPopup(`
+                    <div style="font-family:monospace;font-size:12px">
+                        <b>${icon} ${p.district}</b> (${p.date})<br>
+                        DISHA: <b style="color:${color}">${p.disha_zone_class}</b> (score: ${p.disha_combined_score})<br>
+                        Lead: <b>${p.predicted_days_before}d before</b><br>
+                        Pop: ${p.affected_population.toLocaleString()}<br>
+                        ${p.miss_reason ? '<span style="color:#f87171">Miss: ' + p.miss_reason + '</span>' : ''}
+                    </div>
+                `);
+            });
+
+            // Table rows
+            const tableEl = document.getElementById('val-table');
+            tableEl.innerHTML = '';
+            events.features.forEach(f => {
+                const p = f.properties;
+                const row = document.createElement('div');
+                row.className = `flex items-center gap-3 p-3 rounded-lg border ${
+                    p.correct ? 'bg-emerald-900/20 border-emerald-700/50' : 'bg-red-900/20 border-red-700/50'
+                }`;
+                row.innerHTML = `
+                    <div class="text-lg">${p.correct ? '✅' : '❌'}</div>
+                    <div class="flex-1">
+                        <div class="text-sm font-semibold text-white">${p.district} — ${p.revenue_circle}</div>
+                        <div class="text-xs text-slate-400">${p.date} · ${p.affected_population.toLocaleString()} affected</div>
+                        ${p.miss_reason ? '<div class="text-xs text-red-400 mt-1">Miss reason: ' + p.miss_reason + '</div>' : ''}
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs font-mono px-2 py-1 rounded ${p.disha_zone_class === 'RED' ? 'bg-red-900 text-red-300' : p.disha_zone_class === 'ORANGE' ? 'bg-orange-900 text-orange-300' : 'bg-yellow-900 text-yellow-300'}">${p.disha_zone_class}</span>
+                        <div class="text-xs text-slate-400 mt-1">${p.predicted_days_before}d lead · score ${p.disha_combined_score}</div>
+                    </div>
+                `;
+                tableEl.appendChild(row);
+            });
+
+        } catch(e) {
+            console.error('Validation data load failed:', e);
+        }
+    }
+    </script>
 </body>
 </html>

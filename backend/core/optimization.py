@@ -112,6 +112,7 @@ class RelocationPlan:
     assignments: list[Assignment]
     unassigned_ids: list[str]
     summary: dict
+    evacuation_waves: list[dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         by_tier: dict[str, list] = {"immediate": [], "short_term": [], "medium_term": []}
@@ -122,6 +123,13 @@ class RelocationPlan:
             "by_tier": by_tier,
             "unassigned": self.unassigned_ids,
             "summary": self.summary,
+            "evacuation_waves": self.evacuation_waves,
+            "wave_summary": {
+                "total_waves": len(self.evacuation_waves),
+                "total_hours_to_complete": len(self.evacuation_waves) * 2,
+                "road_capacity_assumed_per_hr": 800,
+                "method": "Phased sequencing to prevent NH corridor saturation"
+            } if self.evacuation_waves else {}
         }
 
 
@@ -372,4 +380,82 @@ def compute_relocation_plan(
         f"{len(unassigned)} unassigned, method=Hungarian"
     )
 
-    return RelocationPlan(assignments=assignments, unassigned_ids=unassigned, summary=summary)
+    # Compute phased evacuation waves to prevent simultaneous road saturation
+    waves = assign_evacuation_waves(assignments)
+
+    return RelocationPlan(assignments=assignments, unassigned_ids=unassigned, summary=summary, evacuation_waves=waves)
+
+
+def assign_evacuation_waves(
+    assignments: list[Assignment],
+    road_capacity_per_hour: int = 800
+) -> list[dict]:
+    """
+    Groups habitation assignments into time-sequenced evacuation waves to
+    prevent road network saturation when multiple habitations evacuate simultaneously.
+
+    The primary NH corridor in Assam (NH-27/37) has a realistic throughput of
+    ~800 people/hour under emergency conditions (single-lane rural road).
+    Immediate tier always evacuates in Wave 1. Subsequent tiers fill later waves.
+
+    Returns a list of wave dicts with timing and corridor utilization.
+    """
+    waves = []
+    current_wave_habs: list[Assignment] = []
+    current_wave_pop = 0
+    wave_number = 1
+
+    # Strict tier ordering: most vulnerable always move first
+    tier_order = {"immediate": 0, "short_term": 1, "medium_term": 2}
+    sorted_assignments = sorted(
+        assignments,
+        key=lambda a: (tier_order.get(a.tier, 3), -a.vulnerability_score)
+    )
+
+    def flush_wave():
+        nonlocal wave_number, current_wave_habs, current_wave_pop
+        if not current_wave_habs:
+            return
+        utilization = round(current_wave_pop / road_capacity_per_hour * 100, 1)
+        waves.append({
+            "wave_number": wave_number,
+            "start_hour": (wave_number - 1) * 2,
+            "end_hour": wave_number * 2,
+            "label": f"Wave {wave_number}: H+{(wave_number-1)*2} to H+{wave_number*2}",
+            "habitations": [{
+                "habitation_id": a.habitation_id,
+                "habitation_name": a.habitation_name,
+                "population": a.population,
+                "tier": a.tier,
+                "site_name": a.site_name,
+                "distance_km": round(a.distance_km, 2),
+                "hab_lat": a.hab_lat,
+                "hab_lng": a.hab_lng,
+            } for a in current_wave_habs],
+            "total_population": current_wave_pop,
+            "corridor_utilization_pct": utilization,
+            "status_color": (
+                "#22c55e" if utilization < 70
+                else "#f59e0b" if utilization < 90
+                else "#ef4444"
+            ),
+            "status_label": (
+                "CLEAR" if utilization < 70
+                else "CONGESTED" if utilization < 90
+                else "SATURATED"
+            )
+        })
+        wave_number += 1
+        current_wave_habs = []
+        current_wave_pop = 0
+
+    for assignment in sorted_assignments:
+        # If this assignment would push the wave over capacity AND we already have
+        # someone in this wave, flush before adding
+        if current_wave_pop + assignment.population > road_capacity_per_hour and current_wave_habs:
+            flush_wave()
+        current_wave_habs.append(assignment)
+        current_wave_pop += assignment.population
+
+    flush_wave()  # flush remaining
+    return waves

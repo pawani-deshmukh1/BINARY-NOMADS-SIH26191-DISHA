@@ -74,16 +74,39 @@ def process_sos_with_llm(payload: WebhookPayload):
             extracted_data["severity"] = "RED"
             extracted_data["demographics"] = "3 Kids"
 
-    # Geocode the location entity (Mocked bounding box for Guwahati for instant demo mapping)
-    # Guwahati rough bbox: 26.1, 91.7 to 26.2, 91.8
-    mock_lat = round(random.uniform(26.12, 26.18), 5)
-    mock_lng = round(random.uniform(91.72, 91.80), 5)
+    # Geocode the location entity using Nominatim (real OSM geocoder)
+    # Falls back to Guwahati city centre only if geocoding fails — not random coordinates
+    geo_lat = 26.1445  # Guwahati city centre fallback
+    geo_lng = 91.7362
+    location_entity = extracted_data.get("location_entity", "Unknown Location")
     
+    if location_entity and location_entity not in ("Unknown Location", "Unknown"):
+        try:
+            import requests as _req
+            nominatim_url = (
+                f"https://nominatim.openstreetmap.org/search"
+                f"?q={location_entity},+Guwahati,+Assam,+India"
+                f"&format=json&limit=1"
+            )
+            geo_resp = _req.get(
+                nominatim_url,
+                headers={"User-Agent": "DISHA-DisasterManagement/1.0 (ashutosh@disha.gov.in)"},
+                timeout=4
+            )
+            if geo_resp.status_code == 200:
+                results = geo_resp.json()
+                if results:
+                    geo_lat = round(float(results[0]["lat"]), 6)
+                    geo_lng = round(float(results[0]["lon"]), 6)
+                    print(f"[SOS] Geocoded '{location_entity}' → ({geo_lat}, {geo_lng})")
+        except Exception as geo_err:
+            print(f"[SOS] Nominatim geocoding failed for '{location_entity}': {geo_err}. Using city centre fallback.")
+
     signal = {
         "id": payload.message_id,
         "phone": payload.sender_phone,
-        "lat": mock_lat,
-        "lng": mock_lng,
+        "lat": geo_lat,
+        "lng": geo_lng,
         "location": extracted_data.get("location_entity", "Unknown"),
         "severity": extracted_data.get("severity", "YELLOW"),
         "demographics": extracted_data.get("demographics", "None specified"),

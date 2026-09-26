@@ -245,10 +245,47 @@ async def generate_advisory(habitation_id: str, region: str = Query(default="ass
     combined_score = risk_score_result.get("combined_score", 0.8)
     lead_time_hrs = max(6, round((1.0 - combined_score) * 72))
     
+    # Derive dynamic urgency from risk score
+    combined_score = risk_score_result.get("combined_score", 0.8)
+    if combined_score >= 0.80:
+        urgency = "CRITICAL"
+    elif combined_score >= 0.60:
+        urgency = "HIGH"
+    elif combined_score >= 0.40:
+        urgency = "MODERATE"
+    else:
+        urgency = "MONITOR"
+
     # 6. Generate structured advisory
+    _site_name = best_site.get('name', 'Nearest Safe Zone')
+    _dist_km = best_site.get('distance_km', 0)
+    _route_st = route_status if 'route_status' in locals() else 'CLEAR'
+
+    sms_text = (
+        f"DISHA ALERT [{urgency}]: {hab['name']} ({pop} residents) is at HIGH flood risk. "
+        f"Evacuate to {_site_name} ({_dist_km:.1f}km). "
+        f"Route: {_route_st}. Do NOT use RED roads. -ASDMA"
+    )[:160]
+
+    whatsapp_text = (
+        f"\U0001f6a8 *FLOOD ALERT \u2014 {hab['name']}*\n\n"
+        f"Risk Level: *{urgency}*\n"
+        f"Population: {pop} residents\n"
+        f"Safe Zone: {_site_name} ({_dist_km:.1f}km away)\n"
+        f"Route Status: {_route_st}\n"
+        f"Lead Time: ~{lead_time_hrs} hours\n\n"
+        f"_Powered by DISHA \u2014 ASDMA_"
+    )
+
+    ivr_script = (
+        f"Yeh ASDMA ka flood warning hai. {hab['name']} mein baadh ka khatara hai. "
+        f"Turant {_site_name} jaiye. Rasta saaf hai. "
+        f"Apne parivaar ko lekar nikle. Yeh sandesh dobara sunne ke liye 1 dabaye."
+    )
+
     advisory = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "urgency": "CRITICAL",
+        "urgency": urgency,
         "estimated_lead_time_hrs": lead_time_hrs,
         "habitation": {
             "id": hab["id"],
@@ -269,25 +306,35 @@ async def generate_advisory(habitation_id: str, region: str = Query(default="ass
             "flood":     risk_score_result.get("flood_explanation", {}),
             "landslide": risk_score_result.get("landslide_explanation", {}),
             "zone_class": risk_score_result.get("zone_class", "RED"),
-            "combined_score": risk_score_result.get("combined_score", 0.0),
+            "combined_score": combined_score,
         },
         "relocation_plan": {
             "recommended_site": best_site,
             "routing_decision": routing_decision.get("routing_decision", "REACHABLE") if 'routing_decision' in locals() else "REACHABLE",
             "evacuation_mode": evac_mode if 'evac_mode' in locals() else best_site.get("access_mode", "road"),
             "verified_route": verified_route if 'verified_route' in locals() else None,
-            "route_status": route_status if 'route_status' in locals() else "CLEAR",
+            "route_status": _route_st,
             "routing_rejected_zones": routing_decision.get("rejected_zones", []) if 'routing_decision' in locals() else [],
-            "overflow_sites": overflow_sites, # Newly added for capacity load balancing
+            "overflow_sites": overflow_sites,
             "alternative_sites": valid_candidates[1:3] if not overflow_sites else [],
             "logistics": {
                 "evacuation_mode": evac_mode if 'evac_mode' in locals() else best_site.get("access_mode", "ROAD"),
-                "distance_km": best_site.get("distance_km", 0),
+                "distance_km": _dist_km,
             },
             "resources_required": resources
         },
         "host_community_options": host_options,
-        "rejected_sites_log": rejected_sites
+        "rejected_sites_log": rejected_sites,
+        # --- Last-mile dissemination package (Gap 1 closure) ---
+        "dissemination_package": {
+            "sachet_compatible": True,
+            "sms_text": sms_text,
+            "whatsapp_text": whatsapp_text,
+            "ivr_script": ivr_script,
+            "channels_available": ["SACHET", "SMS", "WhatsApp", "IVR"],
+            "character_count_sms": len(sms_text),
+            "note": "Dispatch via SDMA SACHET operator credentials. One-click copy for each channel."
+        }
     }
     
     return JSONResponse(content={"status": "success", "advisory": advisory})
