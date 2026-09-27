@@ -80,7 +80,7 @@ DISHA is powered by an ensemble of 7 distinct AI models working in harmony:
 
 DISHA recognizes that Disaster Management (DM) forces on the ground and the Ministry of Home Affairs (MHA) have very different informational needs.
 - **DM (Disaster Management) View:** Granular, hyper-local, and highly actionable. Used by NDRF, SDMA, DDMA, and NDMA forces. These dashboards show exact evacuation routes, individual building damage, carrying capacities of local schools/camps, and real-time alerts.
-- **MHA (Ministry of Home Affairs) View:** Aggregated, strategic oversight. The MHA dashboard provides state-wide vulnerability trends, macro-level resource deployment needs, and long-term Layer 2 strategic fund allocation insights.
+- **MHA (Ministry of Home Affairs) View:** Aggregated, strategic oversight. The MHA actively uses the UFRI spatial explainer (Guwahati 3D simulation) to interface with the Ministry of Housing and Urban Affairs (MoUHA). It provides the concrete data needed to prevent infrastructure from being built in high-risk zones, stop deforestation in critical drainage paths, and drive inter-ministerial policy compromises based on undeniable spatial intelligence.
 
 ---
 
