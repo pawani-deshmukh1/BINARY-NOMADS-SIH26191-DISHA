@@ -272,6 +272,99 @@ map.on('load', () => {
         'layout': { 'visibility': 'none' }
     });
 
+    // ── Innovation 3: Pre-Positioning Pump Icons ────────────────────────────
+    // Dewatering pumps: dark-red zone centroids (elevation ≤ river level)
+    // Sewage/silt pumps: choke point centroids (earth-cutting × drainage)
+    const pumpSourceData = {
+        type: 'FeatureCollection',
+        features: [
+            // Dewatering pumps — low-elevation basins below river HFL 49.68m
+            // Centroids of known danger-mask polygon clusters (Bharalu, Silsako, Deepor)
+            { type: 'Feature', geometry: { type: 'Point', coordinates: [91.7442, 26.1620] }, properties: { pump_type: 'dewater', label: '💧 Dewatering Pump\nBharalu Core Basin', detail: 'Gravity drainage ceased. Brahmaputra backwater effect. Deploy high-capacity dewatering pump (capacity ≥500 LPS).', icon: '💧', urgency: 'CRITICAL' }},
+            { type: 'Feature', geometry: { type: 'Point', coordinates: [91.7290, 26.1510] }, properties: { pump_type: 'dewater', label: '💧 Dewatering Pump\nAnil Nagar Depression', detail: 'DEM elevation 47.2m — 2.5m below HFL. Inland ponding guaranteed when river exceeds 48m. Stage pump now.', icon: '💧', urgency: 'CRITICAL' }},
+            { type: 'Feature', geometry: { type: 'Point', coordinates: [91.8080, 26.1530] }, properties: { pump_type: 'dewater', label: '💧 Dewatering Pump\nSilsako Beel Outfall', detail: 'Beel acts as city overflow sink but has no mechanical outfall. Pumping required to force discharge when river is high.', icon: '💧', urgency: 'HIGH' }},
+            { type: 'Feature', geometry: { type: 'Point', coordinates: [91.6580, 26.1190] }, properties: { pump_type: 'dewater', label: '💧 Dewatering Pump\nDeepur Beel Perimeter', detail: 'Wetland receiving urban runoff from 3 directions. Perimeter pump to prevent overflow into NH-37.', icon: '💧', urgency: 'HIGH' }},
+            // Sewage/silt pumps — choke points (earth-cutting × drain intersection)
+            { type: 'Feature', geometry: { type: 'Point', coordinates: [91.7180, 26.1730] }, properties: { pump_type: 'sewage', label: '🚰 Sewage/Silt Pump\nMaligaon Drain Choke', detail: 'Hill-cutting above Maligaon deposits 40+ tonnes of silt per monsoon into this drain segment. Silt pump + screen required.', icon: '🚰', urgency: 'CRITICAL' }},
+            { type: 'Feature', geometry: { type: 'Point', coordinates: [91.7550, 26.1820] }, properties: { pump_type: 'sewage', label: '🚰 Sewage/Silt Pump\nNarakasur Hill Runoff', detail: 'Active earth-cutting on Narakasur slopes. Sediment runoff is fully blocking the western Bharalu tributary. Emergency dredging + bypass pump.', icon: '🚰', urgency: 'CRITICAL' }},
+            { type: 'Feature', geometry: { type: 'Point', coordinates: [91.7650, 26.1400] }, properties: { pump_type: 'sewage', label: '🚰 Sewage/Silt Pump\nKalapahar Silt Load', detail: 'Kalapahar hill cuttings. Drainage × slope intersection score: CRITICAL. Silt clearance pump needed before monsoon peak.', icon: '🚰', urgency: 'HIGH' }},
+        ]
+    };
+
+    map.addSource('pump-icons', { type: 'geojson', data: pumpSourceData });
+
+    // Glow rings under pumps
+    map.addLayer({
+        'id': 'pump-glow',
+        'type': 'circle',
+        'source': 'pump-icons',
+        'paint': {
+            'circle-radius': 18,
+            'circle-color': [
+                'match', ['get', 'pump_type'],
+                'dewater', 'rgba(59,130,246,0.15)',
+                'rgba(249,115,22,0.15)'
+            ],
+            'circle-stroke-width': 1.5,
+            'circle-stroke-color': [
+                'match', ['get', 'pump_type'],
+                'dewater', '#3b82f6',
+                '#f97316'
+            ],
+            'circle-stroke-opacity': 0.7
+        },
+        'layout': { 'visibility': 'none' }
+    });
+
+    // Pump emoji text labels
+    map.addLayer({
+        'id': 'pump-labels',
+        'type': 'symbol',
+        'source': 'pump-icons',
+        'layout': {
+            'text-field': ['get', 'icon'],
+            'text-size': 22,
+            'text-allow-overlap': true,
+            'text-anchor': 'center',
+            'visibility': 'none'
+        }
+    });
+
+    // Pump urgency dot (CRITICAL = red, HIGH = orange)
+    map.addLayer({
+        'id': 'pump-urgency-dot',
+        'type': 'circle',
+        'source': 'pump-icons',
+        'filter': ['==', ['get', 'urgency'], 'CRITICAL'],
+        'paint': {
+            'circle-radius': 5,
+            'circle-color': '#ef4444',
+            'circle-translate': [10, -10]
+        },
+        'layout': { 'visibility': 'none' }
+    });
+
+    // Click on pump icon → show popup
+    map.on('click', 'pump-labels', (e) => {
+        const props = e.features[0].properties;
+        const color = props.pump_type === 'dewater' ? '#3b82f6' : '#f97316';
+        const urgencyColor = props.urgency === 'CRITICAL' ? '#ef4444' : '#f59e0b';
+        new maplibregl.Popup({ offset: 30, maxWidth: '320px' })
+            .setLngLat(e.features[0].geometry.coordinates)
+            .setHTML(`
+                <div style="font-family:'Inter',sans-serif;background:#0f172a;color:#f8fafc;padding:12px;border-radius:8px;border:1px solid ${color}40">
+                    <div style="font-size:11px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">${props.icon} ${props.pump_type === 'dewater' ? 'Dewatering Pump' : 'Sewage/Silt Pump'}</div>
+                    <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:8px;white-space:pre-line">${props.label.split('\n')[1]}</div>
+                    <div style="font-size:11px;color:#cbd5e1;line-height:1.5;margin-bottom:8px">${props.detail}</div>
+                    <div style="display:inline-block;font-size:10px;font-weight:700;color:${urgencyColor};background:${urgencyColor}20;border:1px solid ${urgencyColor}50;padding:2px 8px;border-radius:4px">⚡ ${props.urgency} PRIORITY</div>
+                </div>
+            `)
+            .addTo(map);
+    });
+    map.on('mouseenter', 'pump-labels', () => { map.getCanvas().style.cursor = 'pointer'; });
+    map.on('mouseleave', 'pump-labels', () => { map.getCanvas().style.cursor = ''; });
+
+
     // 6. SAR Flood Extent Validation (Radar Beacons)
     map.addSource('sar-markers', {
         type: 'geojson',
@@ -610,6 +703,13 @@ function toggleLayer(layerId) {
         if (map.getLayer('choke-points-fill')) map.setLayoutProperty('choke-points-fill', 'visibility', vis);
         if (map.getLayer('choke-points-line')) map.setLayoutProperty('choke-points-line', 'visibility', vis);
     }
+    if (layerId === 'pump-placement') {
+        const vis = isActive ? 'none' : 'visible';
+        ['pump-glow', 'pump-labels', 'pump-urgency-dot'].forEach(l => {
+            if (map.getLayer(l)) map.setLayoutProperty(l, 'visibility', vis);
+        });
+    }
+
     if (layerId === 'sar') {
         const vis = isActive ? 'none' : 'visible';
         if (map.getLayer('sar-points')) map.setLayoutProperty('sar-points', 'visibility', vis);
@@ -651,55 +751,101 @@ function closeReportModal() {
 }
 
 async function submitFieldReport() {
-    const type = document.getElementById('report-type').value;
+    const teamId = document.getElementById('report-team-id')?.value || 'TEAM-001';
+    const rescued = parseInt(document.getElementById('report-rescued')?.value || '0', 10);
     const desc = document.getElementById('report-desc').value;
+    const roadBlocked = document.getElementById('flag-road-blocked')?.checked || false;
+    const shelterFull = document.getElementById('flag-shelter-full')?.checked || false;
+    const roadCleared = document.getElementById('flag-road-cleared')?.checked || false;
     const btn = document.getElementById('btn-submit');
-    
-    if (!desc.trim()) {
-        alert("Please provide observation notes.");
-        return;
-    }
 
     btn.disabled = true;
-    btn.innerText = "Submitting...";
-    btn.classList.add("opacity-50");
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Submitting...';
+    btn.classList.add('opacity-50');
 
     try {
-        // We use map.getCenter() to drop the pin where the user is looking
         const center = map.getCenter();
-        
-        const res = await fetch(window.API_BASE + '/api/strategic-reports/', {
+
+        // --- Innovation 1: POST to /field-reports/ (re-optimizer endpoint) ---
+        const res = await fetch(window.API_BASE + '/field-reports/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                team_id: teamId,
+                rescued_count: rescued,
+                notes: desc,
+                road_blocked: roadBlocked,
+                shelter_full: shelterFull,
+                road_cleared: roadCleared,
                 lat: center.lat,
                 lng: center.lng,
-                report_type: type,
-                description: desc
             })
         });
 
         if (!res.ok) {
             const err = await res.json();
-            throw new Error(err.detail || "Submission failed");
+            throw new Error(err.detail || 'Submission failed');
         }
 
-        // Force reload the layer if it's active
-        if (activeLayers.has('reports')) {
-            map.getSource('field-reports').setData(window.API_BASE + '/api/strategic-reports/');
+        const data = await res.json();
+        const reopt = data.reoptimization;
+
+        // --- Show plan-switch toast if optimizer re-ran ---
+        if (reopt) {
+            showPlanToast(reopt);
+
+            // If road was blocked, visualize it on map
+            if (roadBlocked) {
+                new maplibregl.Popup({ offset: 20, closeOnClick: true })
+                    .setLngLat([center.lng, center.lat])
+                    .setHTML(`<div style="font-family:'Inter',sans-serif;background:#0f172a;color:#f8fafc;padding:10px;border:1px solid #ef444440;border-radius:6px;">
+                        <div style="color:#ef4444;font-weight:700;font-size:11px;margin-bottom:4px;">🚧 ROAD BLOCKED</div>
+                        <div style="font-size:12px;">${desc || 'Reported by ' + teamId}</div>
+                        <div style="color:#f59e0b;font-size:11px;margin-top:6px;">Plan ${reopt.previous_plan} → Plan ${reopt.active_plan}</div>
+                    </div>`)
+                    .addTo(map);
+            }
         } else {
-            // Turn it on so they see their pin
-            toggleLayer('reports');
+            // Standard report — refresh strategic reports layer if visible
+            if (activeLayers.has('reports') && map.getSource('field-reports')) {
+                map.getSource('field-reports').setData(window.API_BASE + '/api/strategic-reports/');
+            }
         }
 
         closeReportModal();
+
     } catch (e) {
-        alert("Error: " + e.message);
+        alert('Error: ' + e.message);
     } finally {
         btn.disabled = false;
-        btn.innerText = "Upload to Command";
-        btn.classList.remove("opacity-50");
+        btn.innerHTML = '<i class="fa-solid fa-satellite-dish mr-2"></i>Upload to Command';
+        btn.classList.remove('opacity-50');
     }
+}
+
+function showPlanToast(reopt) {
+    const toast = document.getElementById('plan-toast');
+    const icon = document.getElementById('plan-toast-icon');
+    const title = document.getElementById('plan-toast-title');
+    const body = document.getElementById('plan-toast-body');
+
+    const planColors = { A: '#10b981', B: '#f59e0b', C: '#ef4444' };
+    const planIcons = { A: '✅', B: '🟠', C: '🔴' };
+    const newPlan = reopt.active_plan;
+    const color = planColors[newPlan] || '#3b82f6';
+
+    toast.style.background = `rgba(9,10,15,0.95)`;
+    toast.style.borderColor = color + '60';
+    toast.style.boxShadow = `0 0 24px ${color}30`;
+
+    icon.innerText = planIcons[newPlan] || '⚡';
+    title.innerText = reopt.plan_switched
+        ? `Plan ${reopt.previous_plan} → Plan ${newPlan} Activated`
+        : `Re-optimizer ran — Plan ${newPlan} maintained`;
+    body.innerText = `${reopt.switch_reason} · ${reopt.new_assignments_count} assigned · ${reopt.unassigned_count} unprotected`;
+
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 8000);
 }
 
 const forensicData = {
@@ -843,6 +989,108 @@ fetch(window.API_BASE + '/api/cwc/guwahati')
     .then(res => res.json())
     .then(data => { liveCWCData = data; })
     .catch(e => console.error("Failed to fetch live CWC data", e));
+
+// ── Innovation 4: Stress Test Injection ────────────────────────────────────
+let _stressTestResults = null;
+
+async function injectStressScenario(templateId) {
+    const btn = document.getElementById('stress-inject-btn');
+    if (btn) { btn.disabled = true; btn.innerText = '⚡ Running...'; }
+
+    try {
+        const rain = parseFloat(document.getElementById('rain-slider')?.value || 0);
+        const river = parseFloat(document.getElementById('river-slider')?.value || 48);
+
+        // Build scenario from template + current slider values
+        const templates = {
+            'bridge_blocked': { block_road_lat: 26.18, block_road_lng: 91.75, block_road_radius_m: 500 },
+            'shelter_30pct': { shelter_capacity_reduction_pct: 30, target_site_id: 'EZ-A02' },
+            'bus_fleet_50pct': { bus_fleet_reduction_pct: 50 },
+            'extreme_rain': { rainfall_spike_multiplier: 1.9 },
+            'cascade': { block_road_lat: 26.18, block_road_lng: 91.75, block_road_radius_m: 500, shelter_capacity_reduction_pct: 50, target_site_id: 'EZ-A02', bus_fleet_reduction_pct: 60 },
+        };
+
+        const selectedId = document.getElementById('stress-scenario-select')?.value || templateId;
+        const scenario = templates[selectedId] || {};
+        scenario.rainfall_spike_multiplier = scenario.rainfall_spike_multiplier || (rain > 100 ? 1.8 : 1.0);
+
+        const res = await fetch(window.API_BASE + '/api/stress-test/inject', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(scenario)
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        _stressTestResults = data;
+        renderStressResults(data);
+
+        // Visualize road block on map if applicable
+        if (scenario.block_road_lat && map.getSource('stress-block')) {
+            const { circle } = turf;
+            const blockPt = turf.circle([scenario.block_road_lng, scenario.block_road_lat], (scenario.block_road_radius_m || 200) / 1000, { units: 'kilometers' });
+            map.getSource('stress-block').setData(blockPt);
+            ['stress-block-fill', 'stress-block-line'].forEach(l => {
+                if (map.getLayer(l)) map.setLayoutProperty(l, 'visibility', 'visible');
+            });
+        }
+
+    } catch (e) {
+        console.error('[StressTest]', e);
+        const resultsEl = document.getElementById('stress-results');
+        if (resultsEl) resultsEl.innerHTML = `<div class="text-red-400 text-xs">⚠ ${e.message}</div>`;
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerText = '⚡ Inject Failure'; }
+    }
+}
+
+function renderStressResults(data) {
+    const el = document.getElementById('stress-results');
+    if (!el) return;
+
+    const d = data.delta;
+    const severityColor = {
+        'CRITICAL': '#ef4444', 'HIGH': '#f97316', 'MODERATE': '#f59e0b', 'RESILIENT': '#22c55e'
+    }[d.severity] || '#94a3b8';
+
+    el.innerHTML = `
+        <div class="bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs space-y-2 mt-2">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+                <span class="font-bold text-slate-300">IMPACT ASSESSMENT</span>
+                <span style="color:${severityColor}" class="font-bold text-sm">${d.severity}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div class="bg-slate-900 rounded p-2">
+                    <div class="text-slate-500 text-[10px] uppercase">Before</div>
+                    <div class="text-white font-bold">${data.before.assigned_count} assigned</div>
+                    <div class="text-slate-400">${data.before.unassigned_count} unprotected</div>
+                </div>
+                <div class="bg-slate-900 rounded p-2">
+                    <div class="text-slate-500 text-[10px] uppercase">After Failure</div>
+                    <div class="text-white font-bold">${data.after.assigned_count} assigned</div>
+                    <div style="color:${severityColor}" class="font-bold">${data.after.unassigned_count} unprotected</div>
+                </div>
+            </div>
+            ${d.unassigned_change > 0 ? `
+            <div class="bg-red-900/30 border border-red-500/40 rounded p-2">
+                <div class="text-red-400 font-bold text-xs">⚠ ${d.unassigned_change} additional habitations ISOLATED</div>
+                <div class="text-red-300 text-[10px] mt-1">${d.isolated_habitations.slice(0,3).join(', ')}${d.isolated_habitations.length > 3 ? ` +${d.isolated_habitations.length-3} more` : ''}</div>
+            </div>` : `<div class="bg-emerald-900/30 border border-emerald-500/40 rounded p-2 text-emerald-400 text-xs font-bold">✅ Plan resilient — no additional isolations</div>`}
+            ${d.wave_impact?.hours_delay > 0 ? `
+            <div class="text-amber-400 text-[10px]">⏱ +${d.wave_impact.hours_delay}h evacuation delay from reduced bus fleet</div>` : ''}
+        </div>
+    `;
+}
+
+// Add stress block visualization source (loaded after map is ready)
+map.on('load', () => {
+    if (!map.getSource('stress-block')) {
+        map.addSource('stress-block', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        map.addLayer({ 'id': 'stress-block-fill', 'type': 'fill', 'source': 'stress-block', 'paint': { 'fill-color': '#ef4444', 'fill-opacity': 0.35 }, 'layout': { 'visibility': 'none' } });
+        map.addLayer({ 'id': 'stress-block-line', 'type': 'line', 'source': 'stress-block', 'paint': { 'line-color': '#ef4444', 'line-width': 2.5, 'line-dasharray': [3,2] }, 'layout': { 'visibility': 'none' } });
+    }
+});
+
 
 function updateIntelligencePanel() {
     const panel = document.getElementById('intelligence-panel');
@@ -1024,6 +1272,26 @@ async function updateScenario() {
                     if (dec.risk_level === "HIGH") { color = "text-orange-400"; borderColor = "border-orange-500/50"; bg = "bg-orange-900/20"; }
                     if (dec.risk_level === "CRITICAL") { color = "text-red-400"; borderColor = "border-red-500/50"; bg = "bg-red-900/20"; }
                     
+                    let actionsHtml = '';
+                    if (dec.action_checklist && dec.action_checklist.length > 0) {
+                        actionsHtml = `
+                        <div class="mt-3 pt-2 border-t border-slate-700/60">
+                            <div class="text-[9px] uppercase tracking-wider text-sky-400 font-bold mb-1.5"><i class="fa-solid fa-list-check mr-1"></i>Cross-Agency Action Checklist (Innovations 6 & 7)</div>
+                            <div class="space-y-1.5">
+                                ${dec.action_checklist.map(a => `
+                                    <div class="bg-slate-900/80 p-2 rounded border border-slate-700 text-[10px]">
+                                        <div class="flex justify-between items-center font-bold">
+                                            <span class="text-emerald-400">${a.agency}</span>
+                                            <span class="text-amber-400 text-[9px]">${a.priority}</span>
+                                        </div>
+                                        <div class="text-slate-200 mt-0.5">${a.action}</div>
+                                        <div class="text-[9px] text-slate-400 mt-0.5"><i class="fa-solid fa-link mr-1"></i>Prerequisite: ${a.prerequisite}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>`;
+                    }
+
                     html += `
                     <div class="border-l-2 ${borderColor} ${bg} p-3 mb-4 rounded-r">
                         <h4 class="${color} font-bold text-xs uppercase flex justify-between">
@@ -1032,7 +1300,7 @@ async function updateScenario() {
                         </h4>
                         <div class="text-[10px] text-slate-400 mb-2">Risk Level: ${dec.risk_level}</div>
                         <div class="text-slate-200 text-xs leading-relaxed border-t border-slate-700/50 pt-2"><i class="fa-solid fa-robot text-indigo-400 mr-1"></i> ${dec.recommendation}</div>
-                        
+                        ${actionsHtml}
                         <!-- Human-in-the-loop Approve/Override buttons -->
                         <div class="flex gap-2 mt-3 pt-3 border-t border-slate-700/50">
                             <button onclick="approveAction(this)" class="flex-1 bg-emerald-600/80 hover:bg-emerald-500 text-white text-[10px] py-1.5 rounded font-bold transition-colors border border-emerald-500 flex items-center justify-center"><i class="fa-solid fa-check mr-1"></i>Approve</button>

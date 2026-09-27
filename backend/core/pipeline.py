@@ -240,9 +240,9 @@ async def run_full_pipeline(
     flood_task     = _run_flood(post_image_bytes, bbox)
     landslide_task = _run_landslide(post_image_bytes, bbox)
 
-    result.damage, result.flood, result.landslide = await asyncio.gather(
-        damage_task, flood_task, landslide_task
-    )
+    result.damage = await damage_task
+    result.flood = await flood_task
+    result.landslide = await landslide_task
 
     logger.info(
         f"[Pipeline] Model confidences — "
@@ -253,7 +253,6 @@ async def run_full_pipeline(
 
     # Step 2: OSM building overlay (cache-first — never blocks on Overpass during demo)
     from .osm_overlay import get_buildings, overlay_damage_on_buildings
-
     buildings_geojson = get_buildings(bbox, allow_fetch=False)  # cache-only during API call
     result.building_damage_features = overlay_damage_on_buildings(
         result.damage.features, buildings_geojson

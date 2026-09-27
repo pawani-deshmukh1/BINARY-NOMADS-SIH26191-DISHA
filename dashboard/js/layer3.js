@@ -32,9 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('lat', lat);
         formData.append('lng', lng);
         formData.append('radius_km', 2.0);
-        // Force demo mode in cloud to prevent 500MB ONNX OOM crash, run live locally
-        const isLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
-        formData.append('demo_mode', isLocal ? 'false' : 'true');
+        formData.append('demo_mode', 'false'); // Force live ONNX inference
         
         // Reset UI
         runBtn.disabled = true;

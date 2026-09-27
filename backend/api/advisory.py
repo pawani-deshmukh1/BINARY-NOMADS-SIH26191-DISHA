@@ -22,6 +22,130 @@ from functools import lru_cache
 
 router = APIRouter(prefix="/advisory", tags=["Relocation Advisory"])
 
+# Sphere standard pre-positioning thresholds
+_PREPOSITION_RESOURCES = {
+    "pump":         {"per_1000_pop": 1,  "icon": "💧", "label": "Dewatering Pump"},
+    "bus":          {"per_1000_pop": 2,  "icon": "🚌", "label": "Evacuation Bus"},
+    "medical_kit":  {"per_1000_pop": 3,  "icon": "🏥", "label": "Medical Kit"},
+    "relief_pack":  {"per_500_pop":  1,  "icon": "📦", "label": "Relief Pack (7-day)"},
+    "life_jacket":  {"per_1000_pop": 5,  "icon": "🦺", "label": "Life Jacket"},
+}
+
+
+@router.get("/pre-position/{region}")
+async def get_preposition_intel(region: str = "assam"):
+    """
+    Innovation 3: Pre-Disaster Resource Pre-Positioning Intel.
+
+    Uses GloFAS river discharge forecast to identify habitations
+    at HIGH or CRITICAL risk in the next 18 hours, then calculates
+    exactly WHAT resources to pre-stage WHERE — before the disaster hits.
+
+    Returns GeoJSON-compatible staging points with emoji icons for map overlay.
+    """
+    try:
+        habitations = load_json_fixture(f"habitations_{region}.json")
+        safe_zones = load_json_fixture(f"safe_zones_{region}.json")
+
+        if not habitations:
+            return {"status": "error", "message": f"No habitations found for region: {region}"}
+
+        staging_points = []
+        high_risk_habs = []
+
+        for hab in habitations:
+            live_trigger = await get_live_weather_trigger(hab["lat"], hab["lng"])
+            risk_multiplier = live_trigger.get("risk_multiplier", 1.0)
+            rain_mm = live_trigger.get("current_rain_mm_hr", 0)
+
+            # Flag habitations that will be at HIGH risk in next 18h
+            combined_risk = min(1.0, (risk_multiplier - 1.0) * 0.5 + (rain_mm / 50.0) * 0.5)
+            if combined_risk < 0.4:
+                continue
+
+            pop = hab.get("population", 0)
+            high_risk_habs.append({**hab, "forecast_risk": round(combined_risk, 3), "live_trigger": live_trigger})
+
+            # Calculate resources needed for this habitation
+            resources_needed = []
+            for res_key, res_cfg in _PREPOSITION_RESOURCES.items():
+                if "per_1000_pop" in res_cfg:
+                    qty = max(1, round(pop / 1000 * res_cfg["per_1000_pop"]))
+                else:
+                    qty = max(1, round(pop / 500 * res_cfg["per_500_pop"]))
+
+                resources_needed.append({
+                    "type": res_key,
+                    "quantity": qty,
+                    "icon": res_cfg["icon"],
+                    "label": res_cfg["label"],
+                })
+
+            # Find nearest safe zone as staging point
+            nearest_sz = None
+            min_dist = float("inf")
+            for sz in safe_zones:
+                from math import radians, sin, cos, sqrt, atan2
+                R = 6371.0
+                dlat = radians(sz["lat"] - hab["lat"])
+                dlng = radians(sz["lng"] - hab["lng"])
+                a = sin(dlat/2)**2 + cos(radians(hab["lat"])) * cos(radians(sz["lat"])) * sin(dlng/2)**2
+                d = R * 2 * atan2(sqrt(a), sqrt(1-a))
+                if d < min_dist:
+                    min_dist = d
+                    nearest_sz = sz
+
+            if nearest_sz:
+                # Staging point = midpoint between hab and safe zone
+                staging_lat = (hab["lat"] + nearest_sz["lat"]) / 2
+                staging_lng = (hab["lng"] + nearest_sz["lng"]) / 2
+            else:
+                staging_lat, staging_lng = hab["lat"], hab["lng"]
+
+            urgency = "CRITICAL" if combined_risk >= 0.75 else "HIGH"
+            staging_points.append({
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [staging_lng, staging_lat]},
+                "properties": {
+                    "layer_type": "preposition_staging",
+                    "habitation_id": hab["id"],
+                    "habitation_name": hab["name"],
+                    "population_at_risk": pop,
+                    "forecast_risk": round(combined_risk, 3),
+                    "urgency": urgency,
+                    "staging_lead_time_hrs": 6 if urgency == "CRITICAL" else 12,
+                    "resources": resources_needed,
+                    "nearest_safe_zone": nearest_sz["name"] if nearest_sz else None,
+                    "distance_to_sz_km": round(min_dist, 2) if nearest_sz else None,
+                    "live_weather": live_trigger,
+                    # Primary resource icons for quick map display
+                    "primary_icon": "🔴" if urgency == "CRITICAL" else "🟠",
+                    "resource_summary": " ".join(
+                        f"{r['icon']}{r['quantity']}" for r in resources_needed[:3]
+                    ),
+                }
+            })
+
+        return {
+            "type": "FeatureCollection",
+            "features": staging_points,
+            "metadata": {
+                "region": region,
+                "high_risk_habitations": len(high_risk_habs),
+                "total_staging_points": len(staging_points),
+                "total_population_at_risk": sum(h.get("population", 0) for h in high_risk_habs),
+                "generated_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+                "note": "Stage these resources NOW. Flood onset expected within 6–18 hours.",
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"[Advisory/Pre-Position] Failed: {e}", exc_info=True)
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 # Removed lru_cache to ensure fresh data loads and trigger uvicorn hot reload
 def load_json_fixture(filename: str):
     path = Path(__file__).resolve().parent.parent / "fixtures" / filename

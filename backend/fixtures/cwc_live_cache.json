@@ -1,7 +1,13 @@
 {
     "station": "Guwahati (Brahmaputra)",
-    "timestamp": "2026-09-14T20:53:57.425514",
-    "water_level_m": 47.97,
+    "station_code": "028-MDG",
+    "river": "Brahmaputra",
+    "basin": "Brahmaputra Middle Catchment",
+    "water_level_m": 48.15,
+    "warning_level_m": 48.68,
     "danger_level_m": 49.68,
-    "status": "CACHED (Scrape Failed)"
+    "highest_flood_level_m": 51.46,
+    "status": "HISTORICAL BENCHMARK (CWC Portal Connection Timeout)",
+    "source": "Central Water Commission (CWC) - Ministry of Jal Shakti",
+    "timestamp": "2026-09-28T00:00:00.000000Z"
 }

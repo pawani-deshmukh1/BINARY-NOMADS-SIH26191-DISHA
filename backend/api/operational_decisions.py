@@ -147,12 +147,13 @@ def get_decision_support(rainfall_mm_hr: float = 0.0, river_level_m: float = 48.
                         math_context += f" A catastrophic volume deficit of {(Q_runoff_m3s - manning_capacity):,.0f} m³/s is actively flooding the streets."
                         
                 cbrn_context = ""
-                rule_override = "Do NOT give prescriptive commands (e.g. do not say 'deploy pumps'). Just synthesize the situation using the 5Ws."
+                cbrn_context = ""
+                rule_override = "You ARE authorized to provide crisp, decisive operational directives. Synthesize the situation using the 5Ws and state the #1 tactical priority for the Incident Commander."
                 if active_chemical_leaks:
                     cbrn_context = f"\n- CBRN ALERT: The following chemical facilities have reported structural failure/leaks: {active_chemical_leaks}. A toxic Gaussian plume is actively spreading."
                     rule_override = "This is a CBRN emergency. You MUST explicitly recommend UPWIND staging locations for the NDRF base camp and specify HAZMAT Level B/A protective equipment."
                 
-                prompt = f"""You are a highly competent NDRF tactical AI generating a Situational Synthesis.
+                prompt = f"""You are a highly competent NDRF tactical AI generating a Situational Synthesis and Tactical Action Directive.
 {rule_override}
 
 Context:
@@ -192,6 +193,42 @@ Generate a sharp, professional paragraph (max 3-4 sentences). Make sure to expli
             else:
                 synthesis = f"Situational Synthesis (Offline Fallback): A {risk} hazard state detected in {sc['name']}. {exposed_str.capitalize()} exposed. Route: {route_desc}"
             
+            # ── Concrete Situation-to-Action Checklist (Innovations 6 & 7) ────
+            action_checklist = [
+                {
+                    "agency": "APDCL (Power Dept)",
+                    "action": f"De-energize 11kV distribution feeders in {sc['name']} low-lying zones to prevent electrocution.",
+                    "priority": "IMMEDIATE (0–15m)",
+                    "prerequisite": "Precautionary safety lockout before water depth >0.5m"
+                },
+                {
+                    "agency": "GMC (Municipal Corp)",
+                    "action": f"Deploy 2 high-capacity mobile dewatering pumps (≥500 LPS) at critical basin depression.",
+                    "priority": "IMMEDIATE (0–30m)",
+                    "prerequisite": "APDCL generator backup confirmed"
+                },
+                {
+                    "agency": "NDRF (1st Bn Azara)",
+                    "action": f"Dispatch 3 inflatable motorized boat teams via route corridor '{overall_route_status}'.",
+                    "priority": "HIGH (T+30m)",
+                    "prerequisite": "Traffic police green corridor clearance"
+                },
+                {
+                    "agency": "Assam Police Traffic",
+                    "action": f"Cordon {roads} submerged road segments; divert civilian traffic onto bypass elevated ways.",
+                    "priority": "IMMEDIATE",
+                    "prerequisite": "None"
+                }
+            ]
+
+            if len(hospitals) > 0:
+                action_checklist.append({
+                    "agency": "Health & Family Welfare",
+                    "action": f"Prepare emergency power generator and ambulance transfer protocol for {hospitals[0]}.",
+                    "priority": "CRITICAL",
+                    "prerequisite": "SDRF deep-clearance ambulance escort"
+                })
+
             decisions.append({
                 "basin_id": bid,
                 "basin_name": sc["name"],
@@ -201,6 +238,7 @@ Generate a sharp, professional paragraph (max 3-4 sentences). Make sure to expli
                 "exposed_schools": len(schools),
                 "exposed_roads": roads,
                 "recommendation": synthesis,
+                "action_checklist": action_checklist,
                 "ndrf_route_geojson": route_geojson,
                 "dest_lat": dest_lat,
                 "dest_lon": dest_lon

@@ -110,7 +110,50 @@
     .introjs-arrow.right { border-left-color: var(--surface) !important; }
     .introjs-button { background-color: var(--accent) !important; color: white !important; border: none !important; text-shadow: none !important; }
     .introjs-skipbutton { color: var(--text-dim) !important; }
+
+    /* ────────────────────────────────────────────────────────
+       PLAN A/B/C SWITCHER (Innovation 2)
+    ──────────────────────────────────────────────────────── */
+    #plan-banner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 24px; font-size: 12px; font-weight: 600;
+      border-bottom: 1px solid var(--border); z-index: 999;
+      background: rgba(9, 10, 15, 0.97); backdrop-filter: blur(8px);
+      transition: background 0.4s ease;
+    }
+    #plan-banner.plan-b { background: rgba(217, 119, 6, 0.12); border-bottom-color: rgba(217,119,6,0.4); }
+    #plan-banner.plan-c { background: rgba(220, 38, 38, 0.14); border-bottom-color: rgba(220,38,38,0.5); }
+    #plan-banner.plan-a { background: rgba(16, 185, 129, 0.05); border-bottom-color: rgba(16,185,129,0.2); }
+
+    .plan-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.5px; text-transform: uppercase; border: 1.5px solid;
+      transition: all 0.3s ease;
+    }
+    .plan-badge.active-a { color: #10b981; border-color: #10b981; background: rgba(16,185,129,0.12); }
+    .plan-badge.active-b { color: #f59e0b; border-color: #f59e0b; background: rgba(245,158,11,0.12); animation: badge-pulse-b 2s ease infinite; }
+    .plan-badge.active-c { color: #ef4444; border-color: #ef4444; background: rgba(239,68,68,0.12); animation: badge-pulse-r 1.5s ease infinite; }
+    .plan-badge.dim { color: #475569; border-color: #334155; background: transparent; }
+
+    @keyframes badge-pulse-b {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(245,158,11,0); }
+    }
+    @keyframes badge-pulse-r {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+      50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+    }
+    #plan-switch-reason {
+      font-size: 11px; color: var(--text-dim);
+      display: flex; align-items: center; gap: 8px;
+    }
+    #plan-switch-reason .blink { animation: blink 1s step-end infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+    #plan-sse-dot { width: 7px; height: 7px; border-radius: 50%; background: #334155; display: inline-block; }
+    #plan-sse-dot.live { background: #10b981; box-shadow: 0 0 6px #10b981; }
   </style>
+
   <script src="js/config.js"></script>
 </head>
 <body>
@@ -120,24 +163,46 @@
       DISHA
       <span class="subtitle">
         Common Operating Picture (COP)<br>
-        <span style="color: var(--accent); font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Operational View (Incident Commander)</span>
+        <span style="color: var(--accent); font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Layer 1: Pre-Disaster Ground Truth & Evac Engine</span>
       </span>
     </div>
-    <div style="display: flex; align-items: center; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <!-- Innovation 5: Data-Aware Confidence Badge -->
+      <div id="confidence-pill" style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 999px; font-size: 11px; color: #22c55e; font-weight: 700; cursor: pointer;" onclick="openConfidenceModal()" title="Click to view telemetry freshness & resolution safeguards">
+        <span style="width: 7px; height: 7px; border-radius: 50%; background: #22c55e; display: inline-block;"></span>
+        <span id="confidence-val">84.5% CONFIDENCE</span>
+      </div>
+      <button class="btn" style="padding: 6px 12px; background: rgba(255,255,255,0.08); width: auto; font-size: 12px; color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15);" onclick="openMultiScenarioModal()">⚡ Plans A / B / C</button>
       <a href="#" id="btn-3d-sim" class="btn" style="padding: 6px 12px; background: var(--accent); color: white; text-decoration: none; font-size: 12px; border-radius: 6px; font-weight: 600;">🌊 View 3D Simulation</a>
       <button class="btn" style="padding: 6px 12px; background: rgba(255,255,255,0.1); width: auto; font-size: 12px;" onclick="startCopTutorial()">🎓 Guided Tour</button>
       <div style="font-size: 14px; font-weight: 600;" id="header-hab-name">Loading...</div>
     </div>
   </header>
 
+  <!-- Innovation 2: Plan A/B/C Live Status Banner -->
+  <div id="plan-banner" class="plan-a">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;">Evac Plan</span>
+      <span class="plan-badge active-a" id="badge-a" onclick="forcePlanSwitch('A')" style="cursor:pointer">✅ Plan A</span>
+      <span class="plan-badge dim" id="badge-b" onclick="forcePlanSwitch('B')" style="cursor:pointer">🟠 Plan B</span>
+      <span class="plan-badge dim" id="badge-c" onclick="forcePlanSwitch('C')" style="cursor:pointer">🔴 Plan C</span>
+    </div>
+    <div id="plan-switch-reason">
+      <span id="plan-sse-dot"></span>
+      <span id="plan-reason-text" style="color:var(--text-dim);">Listening for field reports...</span>
+    </div>
+  </div>
+
   <div class="main-area">
     <div id="map"></div>
+
 
     <div class="sidebar">
       <div class="tabs">
         <div class="tab active" onclick="switchTab('tab-overview')">BASELINE DATA</div>
         <div class="tab" onclick="switchTab('tab-relocation')">RELOCATION</div>
         <div class="tab" onclick="switchTab('tab-simulator')">SIMULATOR</div>
+        <div class="tab" onclick="switchTab('tab-dependencies')">DEPENDENCIES & CONFLICTS</div>
       </div>
 
       <!-- TAB: OVERVIEW -->
@@ -188,6 +253,36 @@
 
       <!-- TAB: RELOCATION -->
       <div class="tab-content" id="tab-relocation">
+
+        <!-- Innovation 2: Active Plan Card -->
+        <div id="active-plan-card" style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.25);border-radius:8px;padding:14px;margin-bottom:20px;">
+          <div class="panel-title" style="color:#10b981;margin-bottom:10px;">⚡ Active Evacuation Plan</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div id="active-plan-label" style="font-size:22px;font-weight:700;color:#fff;">Plan A</div>
+              <div id="active-plan-sublabel" style="font-size:11px;color:var(--text-dim);margin-top:2px;">Primary route active — all sites clear</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Switched</div>
+              <div id="active-plan-time" style="font-size:11px;color:var(--text-dim);">—</div>
+            </div>
+          </div>
+          <div id="active-plan-trigger" style="margin-top:10px;font-size:11px;color:var(--text-dim);display:none;">
+            Triggered by: <span id="active-plan-trigger-text" style="color:var(--warning);"></span>
+          </div>
+
+          <!-- Consequence Breakdown Card (Innovation 1: Incident-to-Consequence Replanning) -->
+          <div id="active-plan-consequence" style="margin-top:12px;padding:10px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:6px;display:none;">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#ef4444;font-weight:bold;margin-bottom:4px;">⚡ CASCADING OPERATIONAL CONSEQUENCE</div>
+            <div id="consequence-summary-text" style="font-size:11px;color:#f87171;line-height:1.4;"></div>
+            <div style="display:flex;gap:12px;margin-top:8px;font-size:11px;">
+              <div>Isolated Pop: <b id="consequence-pop" style="color:#fff;">0</b></div>
+              <div>Convoy Delay: <b id="consequence-delay" style="color:#f59e0b;">+0 min</b></div>
+            </div>
+            <div id="consequence-agency-actions" style="margin-top:8px;font-size:10px;color:#cbd5e1;border-top:1px dashed rgba(255,255,255,0.1);padding-top:6px;"></div>
+          </div>
+        </div>
+
         <div class="panel-title">Approved Safe Zone</div>
         <div id="approved-safe-zone">Loading...</div>
         
@@ -196,6 +291,7 @@
         <div class="panel-title" style="margin-top: 24px;">Rejected Candidates (Failed Sphere Stds)</div>
         <div id="rejected-safe-zones">Loading...</div>
       </div>
+
 
       <!-- TAB: SIMULATOR -->
       <div class="tab-content" id="tab-simulator">
@@ -221,8 +317,45 @@
         </div>
       </div>
 
+      <!-- TAB: DEPENDENCIES & CONFLICTS (Innovations 2, 3, 5, 6 & 8) -->
+      <div class="tab-content" id="tab-dependencies">
+        <div class="panel-title" style="color:#38bdf8;">⚡ Operational Dependency Intelligence</div>
+        <p style="font-size: 12px; color: var(--text-dim); margin-bottom: 14px; line-height: 1.4;">
+          Models interconnected failures across Power (APDCL), Dewatering (GMC), Communications, and Evacuation Corridors.
+        </p>
+
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 11px; color: var(--text-dim); text-transform: uppercase;">Select Trigger Asset</label>
+          <select id="dep-asset-select" style="width: 100%; padding: 8px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: #fff; border-radius: 6px; font-size: 12px; margin-top: 4px;">
+            <option value="PWR-DISPUR-SUB">⚡ Dispur 33/11kV Substation (Power)</option>
+            <option value="PMP-ANIL-NAGAR">💧 Anil Nagar Heavy Dewatering Station (Pumps)</option>
+            <option value="PMP-BHARALU-SLUICE">🌊 Bharalu River Sluice Gate (Drainage)</option>
+            <option value="BRG-NH37-BHARALU">🌉 NH-37 Bharalu River Bridge (Corridor)</option>
+            <option value="COM-TOWER-GHY-02">📡 Dispur Cellular Relay (Telemetry)</option>
+          </select>
+        </div>
+
+        <button class="btn" style="background: #0284c7; margin-bottom: 16px;" onclick="runDependencyFailureSimulation()">
+          ⚡ Simulate Failure & Trace Cascade
+        </button>
+
+        <div id="dep-cascade-results" style="display: none; margin-bottom: 24px;">
+          <div class="panel-title" style="color: #f59e0b; font-size: 11px; text-transform: uppercase;">CASCADING SYSTEM IMPACTS</div>
+          <div id="dep-cascade-list" style="margin-bottom: 12px;"></div>
+          <div class="panel-title" style="color: #10b981; font-size: 11px; text-transform: uppercase;">SYNCHRONIZED CROSS-AGENCY ACTIONS</div>
+          <div id="dep-agency-actions"></div>
+        </div>
+
+        <div class="panel-title" style="color:#ef4444; margin-top: 20px;">🚨 Evidence Conflict & Verification Queue</div>
+        <p style="font-size: 12px; color: var(--text-dim); margin-bottom: 10px; line-height: 1.4;">
+          Automated cross-check between CWC River Gauges, Satellite classifications, and Field Reports.
+        </p>
+        <div id="conflict-queue-list">Loading conflicts...</div>
+      </div>
+
     </div>
   </div>
+
 
   <div id="loader">
     <div style="text-align: center;">
@@ -248,8 +381,28 @@
       document.getElementById(tabId).classList.add('active');
     }
 
+    async function forcePlanSwitch(planId) {
+      // Manual override by Incident Commander
+      try {
+        const res = await fetch(window.API_BASE + '/field-reports/override', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plan_id: planId, reason: "Manual Commander Override" })
+        });
+        if (!res.ok) throw new Error("Override failed");
+        
+        // Optimistic UI update to ensure instantaneous feedback (bypasses potential SSE connection limits)
+        if (window.applyPlan) {
+            window.applyPlan(planId, "Manual Commander Override", new Date().toISOString(), "MANUAL", null);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
     // --- INITIALIZATION ---
     async function initCop() {
+
       const urlParams = new URLSearchParams(window.location.search);
       const habId = urlParams.get('hab_id');
       
@@ -383,10 +536,14 @@
           const plan = advData.advisory.relocation_plan;
           const site = plan.recommended_site;
           
-          // Draw Formal Safe Zone (Blue)
+          // Layer groups for dynamic plan toggling
+          window.planALayers = L.featureGroup();
+          window.planBLayers = L.featureGroup();
+
+          // Draw Formal Safe Zone (Blue) - PLAN A
           L.circleMarker([site.lat, site.lng], {
             radius: 8, color: '#fff', weight: 2, fillColor: '#3b82f6', fillOpacity: 1
-          }).bindPopup(`<b>Approved Safe Zone: ${site.name}</b>`).addTo(map);
+          }).bindPopup(`<b>Approved Safe Zone: ${site.name}</b>`).addTo(window.planALayers);
           
           // Draw pre-computed formal route (Blue)
           if (plan.verified_route && plan.verified_route.features) {
@@ -403,13 +560,13 @@
                       const latlngs = feat.geometry.coordinates.map(c => [c[1], c[0]]);
                       L.polyline(latlngs, {
                           color: color, weight: 3, dashArray: dash, opacity: 0.9
-                      }).bindPopup(feat.properties.description || feat.properties.segment_type).addTo(map);
+                      }).bindPopup(feat.properties.description || feat.properties.segment_type).addTo(window.planALayers);
                   }
               });
           } else {
               L.polyline([[currentHab.lat, currentHab.lng], [site.lat, site.lng]], {
                   color: '#3b82f6', weight: 2, dashArray: '6,6', opacity: 0.8
-              }).bindPopup(`Evac Route: ${site.distance_km} km`).addTo(map);
+              }).bindPopup(`Evac Route: ${site.distance_km} km`).addTo(window.planALayers);
           }
 
           document.getElementById('approved-safe-zone').innerHTML = `
@@ -444,11 +601,11 @@
                     </div>
                   `;
                   
-                  // Plot host on map
+                  // Plot host on map - PLAN B
                   if (h.lat && h.lng) {
                       L.circleMarker([h.lat, h.lng], {
                         radius: 8, color: '#fff', weight: 2, fillColor: '#22c55e', fillOpacity: 1
-                      }).bindPopup(`<b>Option B: ${h.name}</b><br>Receives ${splitPop} pax`).addTo(map);
+                      }).bindPopup(`<b>Option B: ${h.name}</b><br>Receives ${splitPop} pax`).addTo(window.planBLayers);
                       
                       // Draw pre-computed host route (Green)
                       if (h.route_geojson && h.route_geojson.features) {
@@ -464,13 +621,13 @@
                                   const latlngs = feat.geometry.coordinates.map(c => [c[1], c[0]]);
                                   L.polyline(latlngs, {
                                       color: color, weight: 3, dashArray: dash, opacity: 0.9
-                                  }).bindPopup(feat.properties.description || feat.properties.segment_type).addTo(map);
+                                  }).bindPopup(feat.properties.description || feat.properties.segment_type).addTo(window.planBLayers);
                               }
                           });
                       } else {
                           L.polyline([[currentHab.lat, currentHab.lng], [h.lat, h.lng]], {
                               color: '#22c55e', weight: 2, dashArray: '6,6', opacity: 0.8
-                          }).addTo(map);
+                          }).addTo(window.planBLayers);
                       }
                   }
               });
@@ -499,6 +656,20 @@
             }
           });
           document.getElementById('rejected-safe-zones').innerHTML = rejHtml || '<div style="font-size: 12px; color: var(--text-dim);">No sites were rejected.</div>';
+          
+          // Force Plan A to map as default fallback before async state sync
+          if (typeof map !== 'undefined' && window.planALayers) {
+              window.planALayers.addTo(map);
+          }
+          
+          // Sync plan map layers to current backend state
+          fetch(window.API_BASE + '/field-reports/plan-status')
+            .then(r => r.json())
+            .then(data => {
+                const p = data.active_plan;
+                if(window.applyPlan) window.applyPlan(p.plan_id, p.reason, p.switched_at, p.triggered_by_report, p.location);
+            }).catch(() => {});
+            
         } else {
           document.getElementById('approved-safe-zone').innerHTML = '<div style="color: var(--danger);">No valid safe zones found!</div>';
         }
@@ -509,6 +680,7 @@
         fetchOSMBuildings();
 
       } catch (err) {
+
         console.error(err);
         document.getElementById('loader').innerHTML = `<div style="color: var(--danger);">Error: ${err.message}</div>`;
       }
@@ -582,6 +754,9 @@
       document.getElementById('sim-ls').innerText = (simLandslide * 100).toFixed(1) + "%";
       document.getElementById('sim-threat').innerText = isLandslide ? "LANDSLIDE / MUDSLIDE" : "FLASH FLOOD INUNDATION";
       document.getElementById('sim-radius').innerText = (radiusMeters / 1000).toFixed(2) + " km spread";
+
+      // Innovation 1 & 2 integration: automatically trigger Plan C override
+      forcePlanSwitch('C');
     }
 
     function clearSimulation() {
@@ -663,6 +838,399 @@
 
     // Run on load
     initCop();
+
+    // ── Innovation 2: Plan A/B/C SSE Listener ─────────────────────────────────
+    (function connectPlanSSE() {
+        const sseDot = document.getElementById('plan-sse-dot');
+        const reasonText = document.getElementById('plan-reason-text');
+        const banner = document.getElementById('plan-banner');
+
+        window.applyPlan = function(planId, reason, switchedAt, reportId, location, consequence) {
+            const badges = { A: 'badge-a', B: 'badge-b', C: 'badge-c' };
+            const activeClasses = { A: 'active-a', B: 'active-b', C: 'active-c' };
+            const planColors = { A: 'plan-a', B: 'plan-b', C: 'plan-c' };
+            const planDescriptions = {
+                A: 'Primary route active — all sites clear',
+                B: 'Alternate route active — primary compromised',
+                C: '🚨 Emergency protocol — boat/heli only',
+            };
+
+            // Update header badges
+            ['A','B','C'].forEach(p => {
+                const el = document.getElementById('badge-' + p);
+                el.className = 'plan-badge ' + (p === planId ? activeClasses[p] : 'dim');
+            });
+
+            // Update banner color
+            banner.className = '';
+            banner.classList.add('plan-' + planId.toLowerCase());
+
+            // Toggle Map Layers based on active plan
+            if (typeof map !== 'undefined' && window.planALayers && window.planBLayers) {
+                map.removeLayer(window.planALayers);
+                map.removeLayer(window.planBLayers);
+                
+                if (planId === 'A') {
+                    window.planALayers.addTo(map);
+                    try { if (window.planALayers.getLayers().length > 0) map.fitBounds(window.planALayers.getBounds(), {padding: [50, 50], maxZoom: 14}); } catch(e) {}
+                } else if (planId === 'B') {
+                    window.planBLayers.addTo(map);
+                    try { if (window.planBLayers.getLayers().length > 0) map.fitBounds(window.planBLayers.getBounds(), {padding: [50, 50], maxZoom: 14}); } catch(e) {}
+                } else if (planId === 'C') {
+                    // Plan C is Heli/Boat, hide all road routes
+                }
+            }
+
+            // Update reason text
+            if (reason) {
+                const locStr = location?.lat ? ` (${location.lat.toFixed(3)}°N, ${location.lng.toFixed(3)}°E)` : '';
+                reasonText.innerHTML = `<span class="blink" style="color:${planId==='A'?'#10b981':planId==='B'?'#f59e0b':'#ef4444'}">◉</span> Plan ${planId} activated — ${reason}${locStr}`;
+            } else {
+                reasonText.innerHTML = `<span style="color:var(--text-dim);">Listening for field reports...</span>`;
+            }
+
+            // Update Relocation tab card
+            const label = document.getElementById('active-plan-label');
+            const subLabel = document.getElementById('active-plan-sublabel');
+            const timeEl = document.getElementById('active-plan-time');
+            const triggerEl = document.getElementById('active-plan-trigger');
+            const triggerText = document.getElementById('active-plan-trigger-text');
+            const card = document.getElementById('active-plan-card');
+
+            if (label) label.innerText = 'Plan ' + planId;
+            if (subLabel) subLabel.innerText = planDescriptions[planId] || '';
+            if (timeEl && switchedAt) timeEl.innerText = new Date(switchedAt).toLocaleTimeString();
+
+            if (card) {
+                const cardColors = { A: 'rgba(16,185,129,0.06)', B: 'rgba(245,158,11,0.08)', C: 'rgba(239,68,68,0.1)' };
+                const borderColors = { A: 'rgba(16,185,129,0.25)', B: 'rgba(245,158,11,0.35)', C: 'rgba(239,68,68,0.4)' };
+                card.style.background = cardColors[planId];
+                card.style.borderColor = borderColors[planId];
+            }
+
+            if (reason && triggerEl && triggerText) {
+                triggerEl.style.display = 'block';
+                triggerText.innerText = `${reason}${reportId ? ' (Report: ' + reportId + ')' : ''}`;
+            }
+
+            // Display Consequence Analysis (Innovation 1: Incident-to-Consequence Replanning)
+            const csqEl = document.getElementById('active-plan-consequence');
+            if (consequence && csqEl) {
+                csqEl.style.display = 'block';
+                document.getElementById('consequence-summary-text').innerText = consequence.consequence_summary;
+                document.getElementById('consequence-pop').innerText = (consequence.isolated_population || 0).toLocaleString();
+                document.getElementById('consequence-delay').innerText = `+${consequence.transit_delay_minutes || 0} min`;
+                
+                const actsEl = document.getElementById('consequence-agency-actions');
+                if (actsEl && consequence.prescribed_cross_agency_actions) {
+                    actsEl.innerHTML = '<div style="font-weight:bold;margin-bottom:3px;color:#94a3b8;">DISPATCHED CONTINGENCIES:</div>' +
+                        consequence.prescribed_cross_agency_actions.map(a => `<div>• <b>${a.agency}:</b> ${a.action}</div>`).join('');
+                }
+            } else if (csqEl && planId === 'A') {
+                csqEl.style.display = 'none';
+            }
+        }
+
+        // Fetch current plan on load
+        fetch(window.API_BASE + '/field-reports/plan-status')
+            .then(r => r.json())
+            .then(data => {
+                const p = data.active_plan;
+                window.applyPlan(p.plan_id, p.reason, p.switched_at, p.triggered_by_report, p.location);
+            })
+            .catch(() => {});
+
+        // Connect SSE stream for live updates
+        function connect() {
+            const es = new EventSource(window.API_BASE + '/field-reports/plan-events');
+            es.onopen = () => {
+                sseDot.classList.add('live');
+            };
+            es.onmessage = (evt) => {
+                try {
+                    const msg = JSON.parse(evt.data);
+                    if (msg.type === 'plan_switched') {
+                        window.applyPlan(msg.active_plan, msg.reason, msg.timestamp, msg.report_id, msg.location, msg.consequence);
+                        // Flash the banner
+                        banner.style.transition = 'none';
+                        banner.style.outline = '2px solid #f59e0b';
+                        setTimeout(() => { banner.style.outline = 'none'; banner.style.transition = 'background 0.4s ease'; }, 800);
+                    } else if (msg.type === 'connected') {
+                        const p = msg.active_plan;
+                        window.applyPlan(p.plan_id, p.reason, p.switched_at, p.triggered_by_report, p.location);
+                    }
+                } catch(e) {}
+            };
+            es.onerror = () => {
+                sseDot.classList.remove('live');
+                es.close();
+                setTimeout(connect, 5000); // auto-reconnect
+            };
+        }
+        connect();
+    })();
+
+    // ── INNOVATION 2: OPERATIONAL DEPENDENCY SIMULATION ────────────────────────
+    async function runDependencyFailureSimulation() {
+        const assetId = document.getElementById('dep-asset-select').value;
+        const resBox = document.getElementById('dep-cascade-results');
+        const listEl = document.getElementById('dep-cascade-list');
+        const actsEl = document.getElementById('dep-agency-actions');
+
+        listEl.innerHTML = '<div style="color:var(--text-dim);font-size:11px;">Tracing downstream dependencies...</div>';
+        resBox.style.display = 'block';
+
+        try {
+            const res = await fetch(window.API_BASE + '/api/dependencies/simulate-failure', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ asset_id: assetId })
+            });
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                if (data.cascading_impacts.length === 0) {
+                    listEl.innerHTML = '<div style="color:#22c55e;font-size:11px;">✅ No critical downstream operational nodes impacted directly.</div>';
+                } else {
+                    listEl.innerHTML = data.cascading_impacts.map(c => `
+                        <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:6px;padding:8px;margin-bottom:6px;font-size:11px;">
+                            <div style="display:flex;justify-content:space-between;color:#f87171;font-weight:bold;">
+                                <span>Tier ${c.cascade_depth}: ${c.name}</span>
+                                <span>${c.criticality}</span>
+                            </div>
+                            <div style="color:var(--text-dim);margin:2px 0;">Agency: <b style="color:#fff;">${c.agency}</b> (${c.type})</div>
+                            <div style="color:#cbd5e1;line-height:1.3;">${c.impact_summary}</div>
+                        </div>
+                    `).join('');
+                }
+
+                actsEl.innerHTML = data.cross_agency_corrective_actions.map(a => `
+                    <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:6px;padding:8px;margin-bottom:6px;font-size:11px;">
+                        <div style="display:flex;justify-content:space-between;color:#10b981;font-weight:bold;">
+                            <span>${a.agency}</span>
+                            <span style="color:#f59e0b;">${a.priority}</span>
+                        </div>
+                        <div style="color:#e2e8f0;margin-top:2px;">${a.action}</div>
+                        <div style="color:var(--text-dim);font-size:10px;margin-top:2px;">📍 Target: ${a.target_location}</div>
+                    </div>
+                `).join('');
+            }
+        } catch (e) {
+            listEl.innerHTML = `<div style="color:#ef4444;font-size:11px;">Simulation failed: ${e.message}</div>`;
+        }
+    }
+
+    // ── INNOVATION 3: EVIDENCE CONFLICTS QUEUE ─────────────────────────────────
+    async function loadConflictsQueue() {
+        const el = document.getElementById('conflict-queue-list');
+        if (!el) return;
+
+        try {
+            const res = await fetch(window.API_BASE + '/api/conflicts/priority-queue');
+            const data = await res.json();
+
+            if (data.status === 'success' && data.queue) {
+                el.innerHTML = data.queue.map(c => `
+                    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;margin-bottom:10px;font-size:11px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                            <span style="font-weight:bold;color:#fff;">${c.title}</span>
+                            <span style="background:${c.badge_color};color:#000;font-weight:bold;font-size:10px;padding:2px 6px;border-radius:4px;">
+                                ${c.priority_tier} (${c.priority_score})
+                            </span>
+                        </div>
+                        <div style="color:var(--text-dim);margin-bottom:4px;">📍 ${c.location_name} | Impact: ~${c.affected_population.toLocaleString()} pop</div>
+                        <div style="background:rgba(0,0,0,0.3);padding:6px;border-radius:4px;margin-bottom:6px;line-height:1.3;color:#e2e8f0;">
+                            <div><b>Source A:</b> ${c.source_a.source} &rarr; <i>"${c.source_a.value}"</i> (${c.source_a.timestamp})</div>
+                            <div style="margin-top:2px;"><b>Source B:</b> ${c.source_b.source} &rarr; <i>"${c.source_b.value}"</i> (${c.source_b.timestamp})</div>
+                        </div>
+                        <div style="color:#f59e0b;font-size:10px;margin-bottom:6px;"><b>Protocol:</b> ${c.recommended_verification_protocol}</div>
+                        ${c.status === 'UNVERIFIED' ? `
+                            <button class="btn" style="padding:4px 8px;font-size:10px;background:#3b82f6;color:#fff;width:auto;" onclick="taskScoutUnit('${c.id}')">
+                                🏍️ Dispatch Ground Scout to Verify
+                            </button>
+                        ` : `<span style="color:#22c55e;font-weight:bold;font-size:10px;">✅ Ground Truth Confirmed</span>`}
+                    </div>
+                `).join('');
+            }
+        } catch (e) {
+            el.innerHTML = `<div style="color:#ef4444;font-size:11px;">Failed loading conflicts: ${e.message}</div>`;
+        }
+    }
+
+    async function taskScoutUnit(conflictId) {
+        try {
+            await fetch(window.API_BASE + '/api/conflicts/resolve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    conflict_id: conflictId,
+                    resolution_notes: "Scout confirmed ground overtopping and road submerged. Telemetry offset calibrated.",
+                    winner: "FIELD_OBSERVATION"
+                })
+            });
+            loadConflictsQueue();
+            loadDecisionConfidence();
+        } catch (e) {
+            alert('Failed to dispatch scout: ' + e.message);
+        }
+    }
+
+    // ── INNOVATION 5 & 8: DECISION CONFIDENCE & RESOLUTION SAFEGUARDS ─────────
+    let _confidenceData = null;
+    async function loadDecisionConfidence() {
+        try {
+            const res = await fetch(window.API_BASE + '/api/conflicts/confidence');
+            const data = await res.json();
+            _confidenceData = data;
+
+            const pill = document.getElementById('confidence-pill');
+            const val = document.getElementById('confidence-val');
+            if (val) val.innerText = `${data.overall_confidence_pct}% CONFIDENCE`;
+            if (pill) {
+                pill.style.color = data.color;
+                pill.style.borderColor = data.color + '66';
+                pill.style.background = data.color + '1A';
+            }
+        } catch (e) {}
+    }
+
+    function openConfidenceModal() {
+        if (!_confidenceData) return;
+        const d = _confidenceData;
+        const modal = document.getElementById('modal-confidence');
+        const body = document.getElementById('confidence-modal-body');
+        
+        body.innerHTML = `
+            <div style="background:${d.color}15;border:1px solid ${d.color}40;border-radius:8px;padding:12px;margin-bottom:16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:24px;font-weight:bold;color:${d.color};">${d.overall_confidence_pct}%</span>
+                    <span style="background:${d.color};color:#000;font-weight:bold;padding:4px 8px;border-radius:4px;font-size:11px;">${d.confidence_tier}</span>
+                </div>
+                <div style="color:#e2e8f0;font-size:12px;margin-top:6px;">${d.summary_banner}</div>
+            </div>
+            
+            <div class="panel-title" style="color:#94a3b8;font-size:11px;text-transform:uppercase;margin-bottom:8px;">DATA FRESHNESS & PROVENANCE BREAKDOWN</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;font-size:11px;">
+                <div style="background:rgba(255,255,255,0.03);padding:10px;border-radius:6px;border:1px solid var(--border);">
+                    <div style="color:var(--text-dim);">CWC Telemetry Gauge</div>
+                    <div style="font-size:14px;font-weight:bold;color:#22c55e;">${d.factors.telemetry_freshness.status}</div>
+                    <div style="font-size:10px;color:var(--text-dim);">Latency: ${d.factors.telemetry_freshness.sensor_age_mins} mins ago</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.03);padding:10px;border-radius:6px;border:1px solid var(--border);">
+                    <div style="color:var(--text-dim);">Sentinel-1 SAR Satellite</div>
+                    <div style="font-size:14px;font-weight:bold;color:#38bdf8;">${d.factors.satellite_sar_freshness.status}</div>
+                    <div style="font-size:10px;color:var(--text-dim);">Revisit pass: ${d.factors.satellite_sar_freshness.sar_pass_age_hours} hrs ago</div>
+                </div>
+            </div>
+
+            <div class="panel-title" style="color:#f59e0b;font-size:11px;text-transform:uppercase;margin-bottom:8px;">RESOLUTION-AWARE DECISION SAFEGUARDS (INNOVATION 8)</div>
+            ${d.resolution_safeguards.map(s => `
+                <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:8px;font-size:11px;">
+                    <div style="display:flex;justify-content:space-between;color:#fff;font-weight:bold;">
+                        <span>${s.decision_domain}</span>
+                        <span style="color:${s.resolution_fit === 'OPTIMAL' ? '#22c55e' : '#f59e0b'};">${s.resolution_fit}</span>
+                    </div>
+                    <div style="color:var(--text-dim);margin:2px 0;">Model Resolution: ${s.active_model_resolution}</div>
+                    <div style="color:#94a3b8;font-size:10px;line-height:1.3;">${s.guidance}</div>
+                </div>
+            `).join('')}
+        `;
+        modal.style.display = 'flex';
+    }
+
+    function closeConfidenceModal() {
+        document.getElementById('modal-confidence').style.display = 'none';
+    }
+
+    // ── INNOVATION 5: MULTI-SCENARIO (PLAN A/B/C) MATRIX MODAL ────────────────
+    async function openMultiScenarioModal() {
+        const modal = document.getElementById('modal-multi-scenario');
+        const grid = document.getElementById('scenario-cards-grid');
+        modal.style.display = 'flex';
+
+        try {
+            const res = await fetch(window.API_BASE + '/field-reports/multi-scenario');
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                grid.innerHTML = data.scenarios.map(s => {
+                    const isActive = s.status === 'ACTIVE';
+                    const borderCol = s.plan_id === 'A' ? '#10b981' : s.plan_id === 'B' ? '#f59e0b' : '#ef4444';
+                    return `
+                        <div style="background:${isActive ? borderCol + '14' : 'rgba(255,255,255,0.03)'};border:1.5px solid ${isActive ? borderCol : 'rgba(255,255,255,0.1)'};border-radius:10px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;">
+                            <div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                                    <span style="font-size:16px;font-weight:bold;color:${borderCol};">${s.title}</span>
+                                    ${isActive ? `<span style="background:${borderCol};color:#000;font-size:10px;font-weight:bold;padding:2px 6px;border-radius:4px;">ACTIVE</span>` : ''}
+                                </div>
+                                <div style="font-size:11px;color:#e2e8f0;margin-bottom:10px;line-height:1.4;">
+                                    <div><b>Corridor:</b> ${s.corridor_strategy}</div>
+                                    <div style="margin-top:4px;"><b>Shelters:</b> ${s.shelters_active.join(', ')}</div>
+                                </div>
+                                <div style="display:flex;gap:12px;font-size:11px;background:rgba(0,0,0,0.25);padding:8px;border-radius:6px;margin-bottom:10px;">
+                                    <div>Capacity: <b style="color:#fff;">${s.total_intake_capacity.toLocaleString()}</b></div>
+                                    <div>Avg Transit: <b style="color:#f59e0b;">${s.transit_time_avg_mins}m</b></div>
+                                </div>
+                                <div style="font-size:10px;color:var(--text-dim);border-top:1px dashed rgba(255,255,255,0.1);padding-top:6px;">
+                                    <b>Trigger:</b> ${s.switch_trigger}
+                                </div>
+                            </div>
+                            <button class="btn" style="margin-top:14px;padding:8px;font-size:11px;background:${isActive ? borderCol : 'rgba(255,255,255,0.1)'};color:#fff;" onclick="forcePlanSwitch('${s.plan_id}'); closeMultiScenarioModal();">
+                                ${isActive ? 'Currently Deployed' : `Deploy Plan ${s.plan_id}`}
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+        } catch (e) {
+            grid.innerHTML = `<div style="color:#ef4444;font-size:12px;">Failed loading scenarios: ${e.message}</div>`;
+        }
+    }
+
+    function closeMultiScenarioModal() {
+        document.getElementById('modal-multi-scenario').style.display = 'none';
+    }
+
+    // Call on load
+    loadDecisionConfidence();
+    setTimeout(loadConflictsQueue, 1000);
   </script>
+
+  <!-- MODAL: MULTI-SCENARIO (PLAN A / B / C) MATRIX -->
+  <div id="modal-multi-scenario" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(6px); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:#0b0f19; border:1px solid #1e293b; border-radius:12px; max-width:850px; width:100%; max-height:90vh; overflow-y:auto; padding:24px; box-shadow:0 20px 40px rgba(0,0,0,0.8);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #1e293b; padding-bottom:12px;">
+        <div>
+          <h2 style="margin:0; font-size:18px; color:#fff; display:flex; align-items:center; gap:8px;">
+            <span>⚡ Multi-Scenario Evacuation Strategy</span>
+            <span style="font-size:11px; background:#1e293b; color:#94a3b8; padding:2px 8px; border-radius:999px;">Innovation 5</span>
+          </h2>
+          <p style="margin:4px 0 0; font-size:12px; color:#64748b;">Pre-planned Plans A, B, and C with automated trigger thresholds</p>
+        </div>
+        <button onclick="closeMultiScenarioModal()" style="background:none; border:none; color:#94a3b8; font-size:24px; cursor:pointer;">&times;</button>
+      </div>
+      <div id="scenario-cards-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:16px;">
+        Loading scenarios...
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DATA-AWARE DECISION CONFIDENCE -->
+  <div id="modal-confidence" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(6px); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:#0b0f19; border:1px solid #1e293b; border-radius:12px; max-width:680px; width:100%; max-height:90vh; overflow-y:auto; padding:24px; box-shadow:0 20px 40px rgba(0,0,0,0.8);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #1e293b; padding-bottom:12px;">
+        <div>
+          <h2 style="margin:0; font-size:18px; color:#fff; display:flex; align-items:center; gap:8px;">
+            <span>🛡️ Data-Aware Decision Confidence</span>
+            <span style="font-size:11px; background:#1e293b; color:#94a3b8; padding:2px 8px; border-radius:999px;">Innovation 5 & 8</span>
+          </h2>
+          <p style="margin:4px 0 0; font-size:12px; color:#64748b;">Live sensor freshness, satellite revisit age & resolution safeguards</p>
+        </div>
+        <button onclick="closeConfidenceModal()" style="background:none; border:none; color:#94a3b8; font-size:24px; cursor:pointer;">&times;</button>
+      </div>
+      <div id="confidence-modal-body">Loading confidence metrics...</div>
+    </div>
+  </div>
+
 </body>
 </html>

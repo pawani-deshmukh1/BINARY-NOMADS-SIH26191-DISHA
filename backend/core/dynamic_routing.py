@@ -40,6 +40,7 @@ def get_base_graph(bbox=DEMO_BBOX):
     min_lng, min_lat, max_lng, max_lat = bbox
     # osmnx uses (north, south, east, west)
     try:
+        raise Exception("Overpass API is timing out. Skipping OSMnx fetch and forcing Haversine fallback.")
         G = ox.graph_from_bbox(bbox=(max_lat, min_lat, max_lng, min_lng), network_type='drive')
         logger.info(f"[OSMnx] Graph fetched. Saving to {filename}")
         ox.save_graphml(G, cache_path)

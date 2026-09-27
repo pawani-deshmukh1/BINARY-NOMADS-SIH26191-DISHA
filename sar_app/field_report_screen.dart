@@ -24,6 +24,11 @@ class _FieldReportScreenState extends State<FieldReportScreen> {
   final TextEditingController _rescuedController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
 
+  // Ground Truth Hazard Toggles (Innovation 1 & 4)
+  bool _roadBlocked = false;
+  bool _shelterFull = false;
+  bool _roadCleared = false;
+
   @override
   void initState() {
     super.initState();
@@ -172,17 +177,33 @@ class _FieldReportScreenState extends State<FieldReportScreen> {
       final res = await ApiService.post('/field-reports/', {
         "team_id": teamId,
         "rescued_count": rescued,
-        "notes": _notesController.text
+        "notes": _notesController.text,
+        "road_blocked": _roadBlocked,
+        "shelter_full": _shelterFull,
+        "road_cleared": _roadCleared,
+        "lat": _simLat,
+        "lng": _simLng,
       });
       
       if (res != null && res['status'] == 'queued') {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message']), backgroundColor: Colors.orange));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report submitted successfully!'), backgroundColor: Colors.green));
+        String msg = 'Report submitted successfully!';
+        if (_roadBlocked) {
+          msg = '🚨 Road Blocked reported! Triggered Plan B/C Re-optimizer!';
+        } else if (_shelterFull) {
+          msg = '⚠️ Shelter full reported! Diversion active!';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.green));
       }
       
-      _rescuedController.clear();
-      _notesController.clear();
+      setState(() {
+        _rescuedController.clear();
+        _notesController.clear();
+        _roadBlocked = false;
+        _shelterFull = false;
+        _roadCleared = false;
+      });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
@@ -244,15 +265,50 @@ class _FieldReportScreenState extends State<FieldReportScreen> {
   }
 
   Widget _buildWaiting() {
-    return const Center(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.radar, size: 64, color: Color(0xFF35D07F)),
-          SizedBox(height: 20),
-          Text('STATUS: AVAILABLE', style: TextStyle(color: Color(0xFF35D07F), fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 2)),
-          SizedBox(height: 10),
-          Text('Waiting for command center tasking...', style: TextStyle(color: Colors.white70)),
+          const SizedBox(height: 30),
+          const Icon(Icons.radar, size: 64, color: Color(0xFF35D07F)),
+          const SizedBox(height: 20),
+          const Text('STATUS: AVAILABLE', style: TextStyle(color: Color(0xFF35D07F), fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 2)),
+          const SizedBox(height: 10),
+          const Text('Waiting for command center tasking...', style: TextStyle(color: Colors.white70)),
+          const SizedBox(height: 40),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.04),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFFF4D67).withOpacity(0.5)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Color(0xFFFF4D67)),
+                    SizedBox(width: 8),
+                    Text('SCOUT RAPID REPORT', style: TextStyle(color: Color(0xFFFF4D67), fontWeight: FontWeight.bold, fontSize: 14)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text('Encountered an obstacle or severed bridge during patrol?', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                const SizedBox(height: 14),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.block, color: Colors.white),
+                  label: const Text('REPORT ROAD BLOCKAGE (PLAN B/C TRIGGER)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF4D67), foregroundColor: Colors.white),
+                  onPressed: () {
+                    setState(() { _roadBlocked = true; });
+                    _submitReport();
+                  },
+                ),
+              ],
+            ),
+          )
         ],
       ),
     );
@@ -324,6 +380,50 @@ class _FieldReportScreenState extends State<FieldReportScreen> {
                     labelStyle: TextStyle(color: Colors.white54),
                     enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
                     focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF20D9FF))),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Text('Ground Reality Incident Toggles', style: TextStyle(color: Color(0xFF20D9FF), fontSize: 13, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.04),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white12),
+                  ),
+                  child: Column(
+                    children: [
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        title: const Text('🚧 Road / Bridge Blocked', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                        subtitle: const Text('Forces Hungarian Reroute & Plan B/C', style: TextStyle(color: Colors.white54, fontSize: 10)),
+                        value: _roadBlocked,
+                        activeColor: const Color(0xFFFF4D67),
+                        onChanged: (val) => setState(() { _roadBlocked = val; if (val) _roadCleared = false; }),
+                      ),
+                      const Divider(color: Colors.white12, height: 1),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        title: const Text('🏫 Safe Zone / Shelter Full', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                        subtitle: const Text('Marks shelter at 100% capacity', style: TextStyle(color: Colors.white54, fontSize: 10)),
+                        value: _shelterFull,
+                        activeColor: const Color(0xFFFFA726),
+                        onChanged: (val) => setState(() => _shelterFull = val),
+                      ),
+                      const Divider(color: Colors.white12, height: 1),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        title: const Text('💧 Road Cleared / Flood Receded', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                        subtitle: const Text('Restores primary paved corridor', style: TextStyle(color: Colors.white54, fontSize: 10)),
+                        value: _roadCleared,
+                        activeColor: const Color(0xFF35D07F),
+                        onChanged: (val) => setState(() { _roadCleared = val; if (val) _roadBlocked = false; }),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 16),

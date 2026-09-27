@@ -1,0 +1,10 @@
+backend/
+.venv/
+venv/
+.git/
+__pycache__/
+*.onnx
+*.pkl
+*.h5
+*.pt
+node_modules/

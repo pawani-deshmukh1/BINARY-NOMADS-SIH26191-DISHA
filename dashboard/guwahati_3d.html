@@ -102,6 +102,16 @@
                 <div class="toggle-switch"></div>
             </div>
 
+            <div class="layer-toggle" id="toggle-pump-placement" onclick="toggleLayer('pump-placement')">
+                <div class="flex-1">
+                    <div class="font-bold text-sm text-blue-400">💧🚰 Pump Deployment Map</div>
+                    <div class="text-xs text-slate-400">Dewatering (low-elev) + Silt (choke) points</div>
+                </div>
+                <div class="custom-checkbox"></div>
+            </div>
+
+
+
             <div class="p-3 bg-slate-800 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-700">
                 4. Validated Event Anchor
             </div>
@@ -200,7 +210,31 @@
                 </div>
             </div>
 
+            <!-- Innovation 4: What-If Stress Tester -->
+            <div class="p-3 bg-slate-800 text-xs font-bold text-slate-400 uppercase tracking-widest border-t border-b border-slate-700 mt-2 flex justify-between items-center cursor-pointer" onclick="document.getElementById('stress-panel').classList.toggle('hidden')">
+                <span><i class="fa-solid fa-burst text-red-400 mr-2"></i>What-If Stress Tester</span>
+                <span class="bg-red-900/50 text-red-400 text-[9px] px-1.5 py-0.5 rounded border border-red-500/50 font-bold">NEW</span>
+            </div>
+            <div id="stress-panel" class="p-4 border-b border-slate-700 bg-slate-950/60 hidden">
+                <p class="text-[10px] text-slate-500 mb-3 italic">Inject a failure scenario without changing live state. Tests plan resilience before deployment.</p>
+                <div class="mb-3">
+                    <label class="block text-xs font-bold text-slate-400 mb-1">Failure Scenario</label>
+                    <select id="stress-scenario-select" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-xs outline-none focus:border-red-500 transition-colors">
+                        <option value="bridge_blocked">🌉 NH-37 Bridge Blocked</option>
+                        <option value="shelter_30pct">🏫 Primary Shelter -30% Capacity</option>
+                        <option value="bus_fleet_50pct">🚌 Bus Fleet -50%</option>
+                        <option value="extreme_rain">🌧️ Rainfall Spike +90%</option>
+                        <option value="cascade">🔴 Cascade Failure (All Combined)</option>
+                    </select>
+                </div>
+                <button id="stress-inject-btn" onclick="injectStressScenario()" class="w-full bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white text-xs font-bold py-2 rounded transition-colors flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-burst"></i> ⚡ Inject Failure
+                </button>
+                <div id="stress-results" class="mt-2"></div>
+            </div>
+
             <!-- Historical Trend Graph -->
+
             <div class="p-4 border-t border-slate-700">
                 <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2"><i class="fa-solid fa-chart-line mr-2"></i>Historical Flood Severity Trend</div>
                 <div class="bg-slate-800 rounded-lg p-2 border border-slate-700">
@@ -290,30 +324,85 @@
             <i class="fa-solid fa-satellite-dish mr-2"></i> Submit Field Report
         </button>
 
-        <!-- Report Intake Modal -->
+        <!-- Report Intake Modal — Innovation 1: Field → Re-Optimizer -->
         <div id="report-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center">
-            <div class="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl w-[400px] overflow-hidden">
+            <div class="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl w-[440px] overflow-hidden">
                 <div class="p-4 border-b border-slate-700 bg-slate-800 flex justify-between items-center">
-                    <h3 class="font-bold text-emerald-400"><i class="fa-solid fa-map-pin mr-2"></i>New Ground Truth Report</h3>
+                    <h3 class="font-bold text-emerald-400"><i class="fa-solid fa-satellite-dish mr-2"></i>Ground Truth Field Report</h3>
                     <button onclick="closeReportModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="p-5 space-y-4 text-sm text-slate-300">
-                    <p class="text-[10px] text-slate-400 uppercase tracking-wider mb-2">Target Location: Center of Map</p>
+
+                    <!-- Team ID -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-400 mb-1">Report Type</label>
-                        <select id="report-type" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white outline-none focus:border-emerald-500">
-                            <option value="construction">New Undocumented Construction</option>
-                            <option value="waterlogging">Severe Waterlogging (Not in DEM)</option>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">Team ID</label>
+                        <select id="report-team-id" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white outline-none focus:border-emerald-500 text-sm">
+                            <option value="TEAM-001">TEAM-001 (Alpha — Azara NDRF)</option>
+                            <option value="TEAM-002">TEAM-002 (Bravo — Nagaon)</option>
+                            <option value="TEAM-003">TEAM-003 (Charlie — Silsako)</option>
                         </select>
                     </div>
+
+                    <!-- Rescued Count -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">Rescued Count</label>
+                        <input type="number" id="report-rescued" min="0" value="0" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white outline-none focus:border-emerald-500">
+                    </div>
+
+                    <!-- Ground Truth Flags -->
+                    <div class="bg-slate-800 rounded-lg p-3 space-y-3 border border-slate-700">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">⚡ Ground Truth Conditions</div>
+                        <p class="text-[10px] text-slate-500 italic">These flags trigger the re-optimizer. Plan A/B/C will switch automatically.</p>
+
+                        <label class="flex items-center justify-between cursor-pointer">
+                            <div>
+                                <div class="font-bold text-sm text-red-400">🚧 Road Blocked</div>
+                                <div class="text-[10px] text-slate-400">Creates hazard polygon at this location, re-routes optimizer</div>
+                            </div>
+                            <input type="checkbox" id="flag-road-blocked" class="w-4 h-4 accent-red-500">
+                        </label>
+
+                        <label class="flex items-center justify-between cursor-pointer border-t border-slate-700 pt-3">
+                            <div>
+                                <div class="font-bold text-sm text-amber-400">🏕️ Shelter Full</div>
+                                <div class="text-[10px] text-slate-400">Removes shelter from optimizer pool</div>
+                            </div>
+                            <input type="checkbox" id="flag-shelter-full" class="w-4 h-4 accent-amber-500">
+                        </label>
+
+                        <label class="flex items-center justify-between cursor-pointer border-t border-slate-700 pt-3">
+                            <div>
+                                <div class="font-bold text-sm text-emerald-400">✅ Road Cleared</div>
+                                <div class="text-[10px] text-slate-400">Removes previous blockage, may downgrade plan</div>
+                            </div>
+                            <input type="checkbox" id="flag-road-cleared" class="w-4 h-4 accent-emerald-500">
+                        </label>
+                    </div>
+
+                    <!-- Notes -->
                     <div>
                         <label class="block text-xs font-bold text-slate-400 mb-1">Observation Notes</label>
-                        <textarea id="report-desc" rows="3" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white outline-none focus:border-emerald-500" placeholder="E.g. Multi-story complex built on designated wetland..."></textarea>
+                        <textarea id="report-desc" rows="2" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white outline-none focus:border-emerald-500" placeholder="E.g. NH-37 bridge submerged at km 42..."></textarea>
                     </div>
+
+                    <p class="text-[10px] text-slate-500 italic"><i class="fa-solid fa-location-dot mr-1"></i>Location: center of current map view</p>
+
                     <button onclick="submitFieldReport()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded transition-colors" id="btn-submit">
-                        Upload to Command
+                        <i class="fa-solid fa-satellite-dish mr-2"></i>Upload to Command
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Plan Switch Toast (Innovation 1 feedback) -->
+        <div id="plan-toast" class="hidden fixed top-4 right-4 z-[200] max-w-sm rounded-lg border shadow-2xl p-4 text-sm font-medium transition-all duration-500" style="backdrop-filter:blur(12px);">
+            <div class="flex items-start gap-3">
+                <span id="plan-toast-icon" class="text-2xl"></span>
+                <div>
+                    <div id="plan-toast-title" class="font-bold text-white"></div>
+                    <div id="plan-toast-body" class="text-xs mt-1 opacity-80"></div>
+                </div>
+                <button onclick="document.getElementById('plan-toast').classList.add('hidden')" class="ml-auto text-slate-400 hover:text-white text-xs">✕</button>
             </div>
         </div>
     </div>

@@ -366,8 +366,8 @@
     async function loadValidationData() {
         try {
             const [accResp, eventsResp] = await Promise.all([
-                fetch('/validation/accuracy'),
-                fetch('/validation/events')
+                fetch(`${API_BASE}/validation/accuracy`),
+                fetch(`${API_BASE}/validation/events`)
             ]);
             const acc = await accResp.json();
             const events = await eventsResp.json();

@@ -178,9 +178,7 @@ def get_safe_route(
             logger.info("Using pre-cached OSMnx graph from memory!")
             G = G_base.copy()
         else:
-            logger.info(f"Fetching OSMnx graph for routing: {bbox}")
-            # Fetch the base graph (strictly drivable roads for vehicles)
-            G = ox.graph_from_bbox(bbox=bbox, network_type='drive', simplify=True)
+            raise Exception("Overpass API is timing out. Skipping OSMnx fetch and forcing OSRM fallback.")
             
         # 1. Create Shapely union of flood zones
         flood_union = None

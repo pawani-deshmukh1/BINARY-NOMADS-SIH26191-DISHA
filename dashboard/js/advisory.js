@@ -211,10 +211,53 @@ function renderAdvisoryContent(adv) {
   }
   
   // Content
-  let html = `
+  let sachetHtml = `
     <button class="btn btn-danger" style="width: 100%; margin-bottom: 12px; font-weight: bold; font-size: 13px;" onclick="showCapAlert('${hab.name}')">
       📢 Broadcast CAP Alert
     </button>
+  `;
+
+  if (adv.dissemination_package) {
+    const dp = adv.dissemination_package;
+    sachetHtml = `
+    <div style="border:1px solid #10b981; border-radius:6px; background:rgba(16,185,129,0.05); margin-bottom:12px; padding:12px;">
+      <div style="color:#10b981; font-size:11px; font-weight:bold; margin-bottom:10px; text-transform:uppercase;">
+        <i class="fa-solid fa-satellite-dish mr-1"></i> SACHET Dissemination Ready
+      </div>
+      
+      <div style="margin-bottom:10px;">
+        <div style="font-size:10px; color:var(--text-dim); margin-bottom:4px; display:flex; justify-content:space-between;">
+          <span>SMS Text (${dp.character_count_sms}/160)</span>
+          <button onclick="navigator.clipboard.writeText(this.dataset.text); this.innerText='Copied!';" data-text="${dp.sms_text}" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:10px;font-weight:bold;">Copy</button>
+        </div>
+        <div style="font-size:11px; font-family:monospace; background:rgba(0,0,0,0.3); padding:8px; border-radius:4px; color:var(--text-bright);">
+          ${dp.sms_text}
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <div style="font-size:10px; color:var(--text-dim); margin-bottom:4px; display:flex; justify-content:space-between;">
+          <span>WhatsApp (Markdown format)</span>
+          <button onclick="navigator.clipboard.writeText(this.dataset.text); this.innerText='Copied!';" data-text="${dp.whatsapp_text}" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:10px;font-weight:bold;">Copy</button>
+        </div>
+        <div style="font-size:11px; font-family:monospace; background:rgba(0,0,0,0.3); padding:8px; border-radius:4px; color:var(--text-bright); white-space:pre-wrap;">${dp.whatsapp_text}</div>
+      </div>
+
+      <div>
+        <div style="font-size:10px; color:var(--text-dim); margin-bottom:4px; display:flex; justify-content:space-between;">
+          <span>Hindi IVR Voice Script</span>
+          <button onclick="navigator.clipboard.writeText(this.dataset.text); this.innerText='Copied!';" data-text="${dp.ivr_script}" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:10px;font-weight:bold;">Copy</button>
+        </div>
+        <div style="font-size:11px; font-family:monospace; background:rgba(0,0,0,0.3); padding:8px; border-radius:4px; color:var(--text-bright);">
+          ${dp.ivr_script}
+        </div>
+      </div>
+    </div>
+    `;
+  }
+
+  let html = `
+    ${sachetHtml}
     <div class="adv-box">
       <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:12px;">
         <span style="color:var(--text-dim)">Population</span>
