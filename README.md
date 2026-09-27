@@ -14,6 +14,27 @@ Unlike traditional platforms that only act during a crisis, DISHA spans **long-t
 
 ---
 
+## 📸 Platform Previews
+
+Here is DISHA in action, demonstrating our end-to-end disaster intelligence pipeline:
+
+**1. Proactive Habitation Analysis & Multiple Safe Relocation Zone Routing (with Sachet Assist)**
+![Proactive Habitation Analysis & Relocation Routing](disha_visuals/1.png)
+
+**2. High-Fidelity UFRI Analysis of Guwahati City for Proactive DM and MHA Planning**
+![High-Fidelity UFRI Analysis of Guwahati City](disha_visuals/2.png)
+
+**3. Human-in-the-Loop Self-Healing Pipeline for Continuous AI Model Calibration**
+![Human-in-the-Loop Self-Healing Pipeline](disha_visuals/3.png)
+
+**4. 3D Disaster Simulation with 36-Hour Lead Time Based on Real-Time Forecasts**
+![3D Disaster Simulation](disha_visuals/4.png)
+
+**5. Long-Term Strategic Observatory for Tracking Multi-Hazard Risks and Urban Trends**
+![Long-Term Strategic Observatory](disha_visuals/5.png)
+
+---
+
 ## 🏗️ The 4-Layer Architecture
 
 DISHA is built on a highly modular 4-layer system, each operating on a different timescale and serving a specific disaster management goal.
@@ -70,6 +91,15 @@ To truly understand urban vulnerability, DISHA includes a high-fidelity **3D Guw
 
 ### 👮 Field Ops & SAR App
 DISHA extends beyond the command center directly to the responders. The **Field Ops** module (and the connected `sar_app` Flutter application) connects ground teams with the Common Operating Picture (COP). Responders receive hazard-aware routes and can push live ground-truth data back to the central server.
+
+---
+
+## 🔮 Phase 2 / Future Scope
+
+While the MVP fully answers the SIH26191 mandate, DISHA is architected to scale into a national grid. Future expansions include:
+- **GRU Models for Urban Flood Forecasting:** Implementing Gated Recurrent Unit (GRU) time-series forecasting to predict urban inundation hours in advance, once richer temporal flow datasets are acquired.
+- **Live On-Field Sensor Integration:** Connecting directly with municipal IoT water level sensors for zero-latency triggers instead of relying solely on remote satellite or generic CWC data.
+- **RAG-Powered SOS Triage & Noise Filtering:** Using LLMs to intelligently prioritize ground-truth panic. For example: distinguishing between a high volume of SOS calls from a safe zone (low physical threat / high panic) vs. a low volume of calls from a deeply inundated red zone (high physical threat / connectivity lost), allowing the AI to dynamically direct DM forces to the actual high-risk area first.
 
 ---
 
