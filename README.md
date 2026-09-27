@@ -38,14 +38,14 @@ This is the core pipeline addressing the SIH problem statement (**IDENTIFY → A
 ### 🔴 Layer 3: Damage Assessment & Self-Calibration (Post-Disaster)
 **Goal:** Classify structural damage to buildings after a hazard event.
 - **Siamese ResNet50 Model:** Compares pre- and post-disaster satellite imagery pixel-by-pixel to classify damage as *minor, moderate, or severe*.
-- **Self-Calibration (Human-in-the-Loop):** Machine learning isn't perfect. SDMA operators can manually verify or correct the AI's damage predictions via the UI. This feedback is captured in the `/feedback` loop to continually retrain and self-calibrate the model, making it smarter for the next disaster.
+- **Self-Calibration (Human-in-the-Loop):** Machine learning isn't perfect. Disaster Management (DM) operators can manually verify or correct the AI's damage predictions via the UI. This feedback is captured in the `/feedback` loop to continually retrain and self-calibrate the model, making it smarter for the next disaster.
 
 ---
 
 ## 👥 Stakeholder Views: DM vs. MHA
 
-DISHA recognizes that a District Magistrate (DM) and the Ministry of Home Affairs (MHA) have very different informational needs.
-- **DM (District Magistrate) View:** Granular, hyper-local, and highly actionable. DMs see exact evacuation routes, individual building damage, carrying capacities of local schools/camps, and real-time alerts.
+DISHA recognizes that Disaster Management (DM) forces on the ground and the Ministry of Home Affairs (MHA) have very different informational needs.
+- **DM (Disaster Management) View:** Granular, hyper-local, and highly actionable. Used by NDRF, SDMA, DDMA, and NDMA forces. These dashboards show exact evacuation routes, individual building damage, carrying capacities of local schools/camps, and real-time alerts.
 - **MHA (Ministry of Home Affairs) View:** Aggregated, strategic oversight. The MHA dashboard provides state-wide vulnerability trends, macro-level resource deployment needs, and long-term Layer 2 strategic fund allocation insights.
 
 ---
