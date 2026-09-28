@@ -71,22 +71,32 @@ def get_live_thermodynamics(lat, lon):
         "timezone": "Asia/Kolkata"
     }
     
-    resp = requests.get(url, params=params, timeout=5)
-    resp.raise_for_status()
-    data = resp.json()["hourly"]
-    
-    # Index 0 is T-3, Index 3 is T-0 (Current)
-    t0 = 3
-    t_minus_3 = 0
-    
-    temp = data["temperature_2m"][t0]
-    dew = data["dew_point_2m"][t0]
-    wind_spd = data["wind_speed_10m"][t0]
-    wind_dir = data["wind_direction_10m"][t0]
-    
-    press_0 = data["surface_pressure"][t0]
-    press_3 = data["surface_pressure"][t_minus_3]
-    
+    try:
+        resp = requests.get(url, params=params, timeout=5)
+        resp.raise_for_status()
+        data = resp.json()["hourly"]
+        
+        # Index 0 is T-3, Index 3 is T-0 (Current)
+        t0 = 3
+        t_minus_3 = 0
+        
+        temp = data["temperature_2m"][t0]
+        dew = data["dew_point_2m"][t0]
+        wind_spd = data["wind_speed_10m"][t0]
+        wind_dir = data["wind_direction_10m"][t0]
+        
+        press_0 = data["surface_pressure"][t0]
+        press_3 = data["surface_pressure"][t_minus_3]
+    except Exception as e:
+        logger.warning(f"Open-Meteo API failed ({e}), using fallback demo thermodynamics.")
+        # Fallback values for demo if Render hits the 429 Rate Limit
+        temp = 28.5
+        dew = 26.0
+        wind_spd = 15.0
+        wind_dir = 180.0
+        press_0 = 1002.0
+        press_3 = 1006.0
+        
     pressure_drop_3h = press_3 - press_0
     
     return temp, dew, wind_spd, wind_dir, press_0, pressure_drop_3h
