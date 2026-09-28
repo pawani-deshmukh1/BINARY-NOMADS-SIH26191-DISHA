@@ -60,6 +60,7 @@ def get_real_terrain(lat, lon):
 def get_live_thermodynamics(lat, lon):
     """
     Fetch the last 3 hours of weather to compute pressure drop and current state.
+    Falls back to MET Norway API if Open-Meteo rate limits (429).
     """
     url = "https://api.open-meteo.com/v1/forecast"
     params = {
@@ -71,22 +72,50 @@ def get_live_thermodynamics(lat, lon):
         "timezone": "Asia/Kolkata"
     }
     
-    resp = requests.get(url, params=params, timeout=5)
-    resp.raise_for_status()
-    data = resp.json()["hourly"]
-    
-    # Index 0 is T-3, Index 3 is T-0 (Current)
-    t0 = 3
-    t_minus_3 = 0
-    
-    temp = data["temperature_2m"][t0]
-    dew = data["dew_point_2m"][t0]
-    wind_spd = data["wind_speed_10m"][t0]
-    wind_dir = data["wind_direction_10m"][t0]
-    
-    press_0 = data["surface_pressure"][t0]
-    press_3 = data["surface_pressure"][t_minus_3]
-    
+    try:
+        resp = requests.get(url, params=params, timeout=5)
+        resp.raise_for_status()
+        data = resp.json()["hourly"]
+        
+        # Index 0 is T-3, Index 3 is T-0 (Current)
+        t0 = 3
+        t_minus_3 = 0
+        
+        temp = data["temperature_2m"][t0]
+        dew = data["dew_point_2m"][t0]
+        wind_spd = data["wind_speed_10m"][t0]
+        wind_dir = data["wind_direction_10m"][t0]
+        
+        press_0 = data["surface_pressure"][t0]
+        press_3 = data["surface_pressure"][t_minus_3]
+    except Exception as e:
+        logger.warning(f"Open-Meteo API failed ({e}), falling back to MET Norway API.")
+        headers = {'User-Agent': 'DISHA-Disaster-Management/1.0'}
+        met_url = f"https://api.met.no/weatherapi/locationforecast/2.0/compact?lat={lat}&lon={lon}"
+        met_resp = requests.get(met_url, headers=headers, timeout=5)
+        met_resp.raise_for_status()
+        
+        timeseries = met_resp.json()['properties']['timeseries']
+        details = timeseries[0]['data']['instant']['details']
+        
+        temp = details.get('air_temperature', 25.0)
+        rh = details.get('relative_humidity', 80.0)
+        
+        # Calculate dew point using Magnus formula
+        alpha = ((17.27 * temp) / (237.7 + temp)) + math.log(max(rh, 1) / 100.0)
+        dew = (237.7 * alpha) / (17.27 - alpha)
+        
+        wind_spd = details.get('wind_speed', 5.0)
+        wind_dir = details.get('wind_from_direction', 180.0)
+        press_0 = details.get('air_pressure_at_sea_level', 1010.0)
+        
+        # MET.no only gives forecast, so we proxy past pressure from future trend
+        try:
+            future_press = timeseries[3]['data']['instant']['details']['air_pressure_at_sea_level']
+            press_3 = press_0 + (press_0 - future_press)
+        except:
+            press_3 = press_0 + 1.0 # assume slight drop if missing
+        
     pressure_drop_3h = press_3 - press_0
     
     return temp, dew, wind_spd, wind_dir, press_0, pressure_drop_3h
