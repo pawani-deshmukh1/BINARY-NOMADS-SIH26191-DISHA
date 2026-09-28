@@ -66,6 +66,11 @@ function renderSettingsForm() {
   html += buildInput('sphere_standards.m2_per_person', 'Area Per Person (m²)', currentSettings.sphere_standards.m2_per_person, 'UNHCR minimum emergency standard for camp surface area. Default is 3.5m².', 0.5);
   html += buildInput('sphere_standards.max_slope_deg', 'Max Terrain Slope (°)', currentSettings.sphere_standards.max_slope_deg, 'Maximum allowable incline for setting up relief camps safely. (>8° introduces runoff/mudslide risk).', 1);
   html += buildInput('sphere_standards.water_litres_per_person', 'Daily Water Required (L)', currentSettings.sphere_standards.water_litres_per_person, 'Litres of water required per person per day (WASH standard).', 1);
+  html += buildInput('sphere_standards.dewatering_pump_per_1000', 'Dewatering Pumps (per 1,000 pop)', currentSettings.sphere_standards.dewatering_pump_per_1000, 'Number of dewatering pumps per 1,000 people.', 1);
+  html += buildInput('sphere_standards.evacuation_bus_per_1000', 'Evacuation Buses (per 1,000 pop)', currentSettings.sphere_standards.evacuation_bus_per_1000, 'Number of buses dispatched per 1,000 people.', 1);
+  html += buildInput('sphere_standards.medical_kit_per_1000', 'Medical Kits (per 1,000 pop)', currentSettings.sphere_standards.medical_kit_per_1000, 'Number of medical kits per 1,000 people.', 1);
+  html += buildInput('sphere_standards.relief_pack_per_500', 'Relief Packs (per 500 pop)', currentSettings.sphere_standards.relief_pack_per_500, 'Number of 7-day relief packs per 500 people.', 1);
+  html += buildInput('sphere_standards.life_jacket_per_1000', 'Life Jackets (per 1,000 pop)', currentSettings.sphere_standards.life_jacket_per_1000, 'Number of life jackets per 1,000 people.', 1);
 
   html += `<h4 style="color:var(--accent); margin-top:24px; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:4px;">Multi-Hazard Risk Fusion</h4>`;
   html += buildInput('risk_fusion.damage_weight', 'Structural Damage Weight', currentSettings.risk_fusion.damage_weight, 'AHP Weight applied to structural damage when calculating total fused risk.', 0.05);
@@ -87,6 +92,11 @@ async function saveSettings() {
   currentSettings.sphere_standards.m2_per_person = getVal('sphere_standards.m2_per_person');
   currentSettings.sphere_standards.max_slope_deg = getVal('sphere_standards.max_slope_deg');
   currentSettings.sphere_standards.water_litres_per_person = getVal('sphere_standards.water_litres_per_person');
+  currentSettings.sphere_standards.dewatering_pump_per_1000 = getVal('sphere_standards.dewatering_pump_per_1000');
+  currentSettings.sphere_standards.evacuation_bus_per_1000 = getVal('sphere_standards.evacuation_bus_per_1000');
+  currentSettings.sphere_standards.medical_kit_per_1000 = getVal('sphere_standards.medical_kit_per_1000');
+  currentSettings.sphere_standards.relief_pack_per_500 = getVal('sphere_standards.relief_pack_per_500');
+  currentSettings.sphere_standards.life_jacket_per_1000 = getVal('sphere_standards.life_jacket_per_1000');
   
   currentSettings.risk_fusion.damage_weight = getVal('risk_fusion.damage_weight');
   currentSettings.risk_fusion.flood_weight = getVal('risk_fusion.flood_weight');

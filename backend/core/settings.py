@@ -36,6 +36,13 @@ class SphereStandardsConfig(BaseModel):
     max_slope_deg: float = 8.0          # Max slope for a safe camp
     max_distance_km: float = 150.0      # Max routing distance
     water_litres_per_person: float = 15.0 # Daily water standard
+    
+    # Resource Allocation Rates
+    dewatering_pump_per_1000: float = 1.0
+    evacuation_bus_per_1000: float = 2.0
+    medical_kit_per_1000: float = 3.0
+    relief_pack_per_500: float = 1.0
+    life_jacket_per_1000: float = 5.0
 
 class AppSettings(BaseModel):
     risk_fusion: RiskFusionWeights = RiskFusionWeights()

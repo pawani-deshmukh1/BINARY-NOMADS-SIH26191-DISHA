@@ -137,6 +137,11 @@ def calculate_resources(population: int, days: int = 5) -> Dict[str, Any]:
     """Calculate basic resource needs for the displaced population."""
     settings = get_settings()
     return {
+        "dewatering_pump": max(1, math.ceil((population * settings.sphere_standards.dewatering_pump_per_1000) / 1000.0)),
+        "evacuation_bus": max(1, math.ceil((population * settings.sphere_standards.evacuation_bus_per_1000) / 1000.0)),
+        "medical_kit": max(1, math.ceil((population * settings.sphere_standards.medical_kit_per_1000) / 1000.0)),
+        "relief_pack": max(1, math.ceil((population * settings.sphere_standards.relief_pack_per_500) / 500.0)),
+        "life_jacket": max(1, math.ceil((population * settings.sphere_standards.life_jacket_per_1000) / 1000.0)),
         "tents_50_person": math.ceil(population / 50.0),
         "water_litres_per_day": population * settings.sphere_standards.water_litres_per_person,
         "total_water_litres": population * settings.sphere_standards.water_litres_per_person * days,

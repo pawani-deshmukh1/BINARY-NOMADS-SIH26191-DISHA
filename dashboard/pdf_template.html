@@ -252,24 +252,29 @@
         <th>Required Quantity</th>
       </tr>
       <tr>
-        <td><strong>Shelter Tents (50-person)</strong></td>
-        <td>Total Population / 50</td>
-        <td id="res-tents" style="font-weight: bold;"></td>
+        <td><strong>Dewatering Pump</strong></td>
+        <td>1 per 1,000 people</td>
+        <td id="res-pump" style="font-weight: bold;"></td>
       </tr>
       <tr>
-        <td><strong>Potable Water (Litres/Day)</strong></td>
-        <td>15 Litres per capita per day</td>
-        <td id="res-water" style="font-weight: bold;"></td>
+        <td><strong>Evacuation Bus</strong></td>
+        <td>2 per 1,000 people</td>
+        <td id="res-bus" style="font-weight: bold;"></td>
       </tr>
       <tr>
-        <td><strong>Food Rations (Daily)</strong></td>
-        <td>1 Ration pack per capita</td>
-        <td id="res-food" style="font-weight: bold;"></td>
-      </tr>
-      <tr>
-        <td><strong>Emergency Medical Kits</strong></td>
-        <td>1 Kit per 50 people</td>
+        <td><strong>Medical Kit</strong></td>
+        <td>3 per 1,000 people</td>
         <td id="res-med" style="font-weight: bold;"></td>
+      </tr>
+      <tr>
+        <td><strong>Relief Pack (7-day)</strong></td>
+        <td>1 per 500 people</td>
+        <td id="res-pack" style="font-weight: bold;"></td>
+      </tr>
+      <tr>
+        <td><strong>Life Jacket</strong></td>
+        <td>5 per 1,000 people</td>
+        <td id="res-life" style="font-weight: bold;"></td>
       </tr>
     </table>
     
@@ -337,12 +342,11 @@
           document.getElementById('sz-distance').innerText = `${site.distance_km} km (${site.access_mode.toUpperCase()})`;
           document.getElementById('sz-safety').innerText = `${site.hazard_safety_score ? (site.hazard_safety_score * 100).toFixed(0) : 95}%`;
           
-          document.getElementById('res-tents').innerText = resources.tents_50_person;
-          document.getElementById('res-water').innerText = `${resources.total_water_litres.toLocaleString()} L`;
-          document.getElementById('res-food').innerText = resources.food_rations_daily.toLocaleString();
-          document.getElementById('res-med').innerText = Math.ceil(hab.population / 50);
-          
-          document.getElementById('res-med').innerText = Math.ceil(hab.population / 50);
+          document.getElementById('res-pump').innerText = resources.dewatering_pump || '—';
+          document.getElementById('res-bus').innerText = resources.evacuation_bus || '—';
+          document.getElementById('res-med').innerText = resources.medical_kit || '—';
+          document.getElementById('res-pack').innerText = resources.relief_pack || '—';
+          document.getElementById('res-life').innerText = resources.life_jacket || '—';
           
           // Fetch Evidence
           try {
