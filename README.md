@@ -14,7 +14,8 @@ Unlike traditional platforms that only act during a crisis, DISHA spans **long-t
 
 ---
 
-## 📸 Platform Previews
+## 📸 Platform Previews & link of platform:
+https://sih-binary-nomads-26191.vercel.app/
 
 Here is DISHA in action, demonstrating our end-to-end disaster intelligence pipeline:
 
